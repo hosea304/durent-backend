@@ -10,7 +10,7 @@
 - [x] **Tech stack dipilih (D20):** NestJS + Prisma (TypeScript) + PostgreSQL; hosting free-tier (Render/Railway + Neon/Supabase). Lihat `TECH_STACK.md`.
 - [x] Endpoint usulan diputuskan (D19): `POST /orders/preview` **diambil (MVP)**; `GET /dashboard/summary` **ditunda (Future)**.
 - [x] Konfirmasi field `orders.confirmed_at`/`confirmed_by` — **diterima pemilik (2026-07-03)**, sudah tercantum di DATA_MODEL §3.5.
-- [x] Scaffold proyek (2026-07-03, D21): struktur modular monolith NestJS (8 modul domain kosong + `common/` + `PrismaService`), config env (`@nestjs/config` + `.env.example`), Prisma 7 + PostgreSQL (koneksi lazy, `DATABASE_URL` placeholder — isi DB nyata sebelum Tahap 1), exception filter `{error:{...}}`, ValidationPipe 422, Swagger `/api/docs`, throttler, logger pino, health check `GET /api/v1/health`. Verifikasi: build + unit + e2e + lint hijau, server jalan.
+- [x] Scaffold proyek (2026-07-03, D21): struktur modular monolith NestJS (8 modul domain kosong + `common/` + `PrismaService`), config env (`@nestjs/config` + `.env.example`), Prisma 7 + PostgreSQL (koneksi lazy; DB nyata = **Supabase free tier, session pooler** — terisi di `.env` & teruji 2026-07-03 via pg + Prisma CLI), exception filter `{error:{...}}`, ValidationPipe 422, Swagger `/api/docs`, throttler, logger pino, health check `GET /api/v1/health`. Verifikasi: build + unit + e2e + lint hijau, server jalan.
 
 ## Tahap 1 — Master / Catalog
 - [ ] Schema + migrasi: `code_segments`, `products`, `vouchers`, `bundles`, `bundle_items`.
