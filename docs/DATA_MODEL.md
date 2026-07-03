@@ -82,8 +82,9 @@ Future (Phase 2): stock_ledger · locations · activity_logs
 | stock_qty | int? | **Phase 2 (D1)** |
 
 ### 3.4 `bundles` / `bundle_items`
-**bundles:** id · code(unique) · name · type · **bundle_price** (manual) · is_active · timestamps · *(derived)* `original_price` = Σ(bundle_items) untuk harga coret FE.
-**bundle_items:** id · bundle_id(fk) · product_id(fk?) · sku_name · sku_code · qty · component_price.
+**bundles:** id · code(unique) · name · type · **category_utama_code** · **code_number** · **bundle_price** (manual) · is_active · timestamps · *(derived)* `original_price` = Σ(qty × component_price) untuk harga coret FE.
+**bundle_items:** id · bundle_id(fk) · product_id(fk?) · sku_name · sku_code · qty · component_price (snapshot `base_price` produk komponen).
+> **Format kode bundle (dari sheet DuRent Bundling, D22):** `DS-BI-{CAT_UTAMA}-{NNNN}` — segmen universal konstan `BI` ("Bundling Items"), nomor urut per category utama. `category_utama_code` + `code_number` disimpan agar nomor berikutnya dihitung dari data, bukan parsing string kode. Kolom *Harga* di sheet DuRent Bundling Code = **harga bundle** (bukan harga komponen).
 
 ### 3.5 `orders`
 | Field | Tipe | Catatan |

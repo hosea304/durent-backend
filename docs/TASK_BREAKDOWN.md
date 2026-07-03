@@ -12,12 +12,12 @@
 - [x] Konfirmasi field `orders.confirmed_at`/`confirmed_by` — **diterima pemilik (2026-07-03)**, sudah tercantum di DATA_MODEL §3.5.
 - [x] Scaffold proyek (2026-07-03, D21): struktur modular monolith NestJS (8 modul domain kosong + `common/` + `PrismaService`), config env (`@nestjs/config` + `.env.example`), Prisma 7 + PostgreSQL (koneksi lazy; DB nyata = **Supabase free tier, session pooler** — terisi di `.env` & teruji 2026-07-03 via pg + Prisma CLI), exception filter `{error:{...}}`, ValidationPipe 422, Swagger `/api/docs`, throttler, logger pino, health check `GET /api/v1/health`. Verifikasi: build + unit + e2e + lint hijau, server jalan.
 
-## Tahap 1 — Master / Catalog
-- [ ] Schema + migrasi: `code_segments`, `products`, `vouchers`, `bundles`, `bundle_items`.
-- [ ] Service kode produk (susun `code`, jamin unik & tak reuse — D12).
-- [ ] CRUD produk/bundling/voucher (admin) + soft delete.
-- [ ] Endpoint katalog publik (`GET /products`, `/bundles`) + cache (ETag).
-- [ ] Seed `code_segments` + import master dari sheet (MIGRATION Tahap 1–2).
+## Tahap 1 — Master / Catalog ✅ (2026-07-03, D22)
+- [x] Schema + migrasi `init_catalog`: `code_segments`, `products`, `vouchers`, `bundles`, `bundle_items` (+ `bundles.category_utama_code`/`code_number` untuk kode `DS-BI-…`).
+- [x] Service kode produk (`ProductCodeService`): susun kode dari segmen, nomor MAX+1 per kombinasi, unik & tak reuse (D12) + unit test.
+- [x] CRUD produk/bundling/voucher (admin) + soft delete + `preview-code` + `GET /code-segments`. ⚠️ Belum ada guard (Tahap 2) — dev-only, disetujui pemilik.
+- [x] Endpoint katalog publik `GET /products`, `/bundles` (+detail by code): hanya aktif, paging+meta, `original_price`, Cache-Control 60s + ETag.
+- [x] Seed `code_segments` (72 kode incl. `BI`) + **import master dari sheet asli**: 100 produk, 8 bundle (24 komponen), 36 voucher — script idempotent `prisma/import-master.ts` & `import-vouchers.ts`. Perbaikan data: kode kembar `DS-CW-OT-DC` → `-0001`/`-0002`. Field turunan (pricing_basis, unit_label, min_qty, is_returnable) diisi aturan MIGRATION §4 — **perlu review pemilik sebelum katalog dipublikasikan**.
 
 ## Tahap 2 — Auth & Users
 - [ ] Schema `users`, `customers`.

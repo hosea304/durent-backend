@@ -1,6 +1,8 @@
-// Schema Prisma DuRent — model bisnis dibuat per tahap TASK_BREAKDOWN
-// (Tahap 1: catalog · Tahap 2: users/customers · Tahap 3: orders · dst.)
-// mengikuti docs/DATA_MODEL.md. Belum ada model di Tahap 0 (scaffold).
+// Schema Prisma DuRent — mengikuti docs/DATA_MODEL.md (sumber kebenaran).
+// Tahap 1: master/catalog (code_segments, products, bundles, bundle_items, vouchers).
+// Tahap 2: users, customers · Tahap 3: orders, order_items · Tahap 4: payments ·
+// Tahap 5: penalties — lihat docs/TASK_BREAKDOWN.md.
+// Konvensi: field snake_case persis DATA_MODEL; uang = Int rupiah (D22).
 
 generator client {
   provider     = "prisma-client"
@@ -10,4 +12,119 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─── Enum ───────────────────────────────────────────────────────────
+
+/// Dari Universal Category sheet: RT / ED / FB / CW / LC
+enum ProductType {
+  rental
+  expendable
+  catering
+  crew
+  location // Phase 2 (D3)
+}
+
+enum PricingBasis {
+  per_day_unit
+  per_unit
+  per_package
+  per_person_day
+}
+
+/// 4 level sistem kode (Master Data Item)
+enum SegmentType {
+  brand
+  universal
+  category_utama
+  sub_category
+}
+
+enum VoucherType {
+  percent
+  nominal
+}
+
+// ─── Master / Reference ─────────────────────────────────────────────
+
+/// Kamus penyusun kode produk (Master Data Item)
+model CodeSegment {
+  id           String      @id @default(uuid()) @db.Uuid
+  segment_type SegmentType
+  code         String // DS, RT, CM, HT, …
+  description  String // "DuRent Support", "Rental", "Handy Talky", …
+  is_active    Boolean     @default(true)
+
+  @@unique([segment_type, code])
+  @@map("code_segments")
+}
+
+/// DuRent Items Code — semua lini dalam satu tabel + kolom type (R1/D9)
+model Product {
+  id                  String       @id @default(uuid()) @db.Uuid
+  code                String       @unique // DS-RT-CM-HT-0001 — immutable, tak direuse (D12)
+  name                String
+  type                ProductType
+  category_utama_code String
+  sub_category_code   String
+  code_number         Int // 0001, 0002 — pembeda tipe sama beda merek
+  base_price          Int // integer rupiah, tanpa float
+  pricing_basis       PricingBasis
+  unit_label          String // unit / pax / orang
+  min_qty             Int? // catering: minimal 20
+  is_returnable       Boolean
+  is_active           Boolean      @default(true) // soft delete (D12)
+  stock_qty           Int? // kolom disiapkan, logika Phase 2 (D1)
+  created_at          DateTime     @default(now())
+  updated_at          DateTime     @updatedAt
+  bundle_items        BundleItem[]
+
+  @@index([type, is_active])
+  @@map("products")
+}
+
+/// DuRent Bundling — kode: {brand}-{universal}-{cat_utama}-{NNNN}, tanpa sub category
+model Bundle {
+  id                  String       @id @default(uuid()) @db.Uuid
+  code                String       @unique
+  name                String
+  type                ProductType
+  category_utama_code String
+  code_number         Int
+  bundle_price        Int // harga khusus manual (harga jual bundle)
+  is_active           Boolean      @default(true)
+  created_at          DateTime     @default(now())
+  updated_at          DateTime     @updatedAt
+  items               BundleItem[]
+
+  // original_price TIDAK disimpan — derived: Σ(qty × component_price) untuk harga coret FE
+  @@map("bundles")
+}
+
+/// DuRent Bundling Code — komponen bundling
+model BundleItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  bundle_id       String   @db.Uuid
+  bundle          Bundle   @relation(fields: [bundle_id], references: [id], onDelete: Cascade)
+  product_id      String?  @db.Uuid // nullable: ditautkan ke products bila cocok
+  product         Product? @relation(fields: [product_id], references: [id])
+  sku_name        String
+  sku_code        String
+  qty             Int
+  component_price Int // harga SATUAN komponen (integer rupiah)
+
+  @@map("bundle_items")
+}
+
+/// Voucher Data & Settings — persen ATAU nominal (D13)
+model Voucher {
+  id         String      @id @default(uuid()) @db.Uuid
+  code       String      @unique
+  type       VoucherType
+  value      Int // percent: 0–100 · nominal: rupiah
+  is_active  Boolean     @default(true)
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+
+  @@map("vouchers")
 }
