@@ -1,0 +1,23 @@
+# dependencies
+/node_modules
+
+# build output
+/dist
+
+# environment (rahasia — jangan pernah dicommit)
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+
+# test coverage
+/coverage
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
