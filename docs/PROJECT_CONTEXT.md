@@ -5,8 +5,8 @@
 | Meta | Nilai |
 |---|---|
 | Nama proyek | DuRent Support — Backend Rental Produksi Film/Event |
-| Fase saat ini | **Planning Phase 0–10 SELESAI + tech stack terpilih (NestJS+Prisma+Postgres, D20).** Siap **scaffold & build** per `TASK_BREAKDOWN.md`. |
-| Status coding | ❌ Belum. Backend, schema, entity, API, tech stack **belum ditetapkan.** |
+| Fase saat ini | **Build dimulai.** Tahap 0 (scaffold) ✅ selesai (D21) — berikutnya **Tahap 1: Master/Catalog** per `TASK_BREAKDOWN.md`. |
+| Status coding | 🟡 Scaffold NestJS+Prisma jalan (health check, kerangka 8 modul). Entity/endpoint bisnis **belum** dibuat. |
 | Terakhir diperbarui | 2026-07-03 |
 | Bahasa | Indonesia (istilah teknis boleh Inggris) |
 

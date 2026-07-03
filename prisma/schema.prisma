@@ -1,0 +1,13 @@
+// Schema Prisma DuRent — model bisnis dibuat per tahap TASK_BREAKDOWN
+// (Tahap 1: catalog · Tahap 2: users/customers · Tahap 3: orders · dst.)
+// mengikuti docs/DATA_MODEL.md. Belum ada model di Tahap 0 (scaffold).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs" // proyek NestJS ini dikompilasi sebagai CommonJS
+}
+
+datasource db {
+  provider = "postgresql"
+}

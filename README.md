@@ -2,7 +2,7 @@
 
 Backend untuk bisnis rental kebutuhan produksi **Film/Event** (DuRent Support), menggantikan sistem berbasis Google Spreadsheet + Apps Script menjadi backend profesional yang scalable & terdokumentasi.
 
-**Status:** 🟢 Planning selesai (Phase 0–10). ⛔ Belum coding. Tech stack belum dipilih.
+**Status:** 🟢 Planning selesai (Phase 0–10) · stack terkunci (D20: NestJS + Prisma + PostgreSQL) · **Tahap 0 (scaffold) selesai** — lanjut Tahap 1 (Master/Catalog) di `docs/TASK_BREAKDOWN.md`.
 
 ---
 

@@ -21,3 +21,6 @@ npm-debug.log*
 .idea/
 Thumbs.db
 .DS_Store
+
+# Prisma client hasil generate (npx prisma generate)
+/src/generated/prisma
