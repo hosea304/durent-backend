@@ -128,6 +128,12 @@ const TESTS = [
       return r;
     },
     cek: (s, b, ctx) => s === 200 && ctx.token ? null : 'login gagal — cek email/password',
+    detailOk: (s, b, ctx) => `
+      <div style="margin-top:.4rem">
+        Token JWT (klik untuk salin — tempel ke tombol <b>Authorize</b> di Swagger):
+        <code class="token-box" title="Klik untuk salin" data-token="${ctx.token}"
+          style="cursor:pointer; word-break:break-all; background:var(--bg-soft); padding:.3rem .5rem; border-radius:6px; display:block; margin-top:.3rem;">${ctx.token}</code>
+      </div>`,
   },
   {
     nama: 'Profil user login', metode: 'GET /auth/me',
@@ -183,7 +189,7 @@ function render(states) {
     <tr>
       <td><span class="badge b-${st.kelas}">${st.label}</span></td>
       <td><b>${TESTS[i].nama}</b><br><span class="metode">${TESTS[i].metode}</span></td>
-      <td>${st.ket ?? ''}${st.body ? `<details><summary>respons</summary><pre>${st.body}</pre></details>` : ''}</td>
+      <td>${st.ket ?? ''}${st.extra ?? ''}${st.body ? `<details><summary>respons</summary><pre>${st.body}</pre></details>` : ''}</td>
     </tr>`).join('');
   const lulus = states.filter((s) => s.kelas === 'ok').length;
   const gagal = states.filter((s) => s.kelas === 'fail').length;
@@ -234,7 +240,7 @@ async function runAll() {
       const salah = TESTS[i].cek(status, body, ctx);
       states[i] = salah
         ? { kelas: 'fail', label: 'GAGAL', ket: `HTTP ${status} — ${salah}`, body: JSON.stringify(body, null, 2)?.slice(0, 2000) }
-        : { kelas: 'ok', label: 'LULUS', ket: `HTTP ${status}` };
+        : { kelas: 'ok', label: 'LULUS', ket: `HTTP ${status}`, extra: TESTS[i].detailOk ? TESTS[i].detailOk(status, body, ctx) : '' };
     } catch (e) {
       states[i] = { kelas: 'fail', label: 'GAGAL', ket: `Tidak bisa terhubung: ${e.message}. Apakah backend sudah jalan? (npm run start:dev di folder backend/)` };
     }
@@ -244,6 +250,22 @@ async function runAll() {
 }
 
 runBtn.addEventListener('click', runAll);
+
+// Klik pada kotak token → salin ke clipboard (delegasi karena tabel di-render ulang)
+rowsEl.addEventListener('click', async (e) => {
+  const el = e.target.closest('.token-box');
+  if (!el) return;
+  const token = el.dataset.token;
+  try {
+    await navigator.clipboard.writeText(token);
+    const asli = el.textContent;
+    el.textContent = '✅ Tersalin ke clipboard';
+    setTimeout(() => { el.textContent = asli; }, 1200);
+  } catch {
+    el.title = 'Gagal salin otomatis — pilih teks manual (Ctrl+A lalu Ctrl+C)';
+  }
+});
+
 render(TESTS.map(() => ({ kelas: 'wait', label: 'menunggu' })));
 </script>
 </body>
