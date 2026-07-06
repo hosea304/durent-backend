@@ -45,6 +45,40 @@ enum VoucherType {
   nominal
 }
 
+enum UserRole {
+  admin
+  gudang
+  owner
+}
+
+// ─── Aktor ──────────────────────────────────────────────────────────
+
+/// Staff (admin/gudang/owner) — login email+password (BACKEND_ARCHITECTURE §6)
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String
+  email         String   @unique
+  phone         String?
+  password_hash String
+  role          UserRole
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("users")
+}
+
+/// Penyewa guest — tanpa auth (D11); cek status order = kode + phone
+model Customer {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  phone      String // kandidat dedup antar-order
+  created_at DateTime @default(now())
+
+  @@index([phone])
+  @@map("customers")
+}
+
 // ─── Master / Reference ─────────────────────────────────────────────
 
 /// Kamus penyusun kode produk (Master Data Item)

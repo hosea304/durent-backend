@@ -19,9 +19,9 @@
 - [x] Endpoint katalog publik `GET /products`, `/bundles` (+detail by code): hanya aktif, paging+meta, `original_price`, Cache-Control 60s + ETag.
 - [x] Seed `code_segments` (72 kode incl. `BI`) + **import master dari sheet asli**: 100 produk, 8 bundle (24 komponen), 36 voucher — script idempotent `prisma/import-master.ts` & `import-vouchers.ts`. Perbaikan data: kode kembar `DS-CW-OT-DC` → `-0001`/`-0002`. Field turunan (pricing_basis, unit_label, min_qty, is_returnable) diisi aturan MIGRATION §4 — **perlu review pemilik sebelum katalog dipublikasikan**.
 
-## Tahap 2 — Auth & Users
-- [ ] Schema `users`, `customers`.
-- [ ] Login staff + hash password + token; middleware role (RBAC).
+## Tahap 2 — Auth & Users ✅ (2026-07-06, D24)
+- [x] Schema `users` (role admin/gudang/owner) + `customers` (guest, index phone) — migrasi `auth_users_customers`.
+- [x] Login staff: `POST /auth/login` (throttle 5x/menit) → JWT (exp `JWT_EXPIRES_IN`, default 1d) + `GET /auth/me` + `POST /auth/logout` (stateless). Hash **argon2**; validasi token ke DB tiap request (user nonaktif langsung tertolak). RBAC `JwtAuthGuard`+`RolesGuard`+`@Roles` — 4 controller admin katalog dikunci `admin`+`owner`. Akun pertama (owner) via seed dari env. Tanpa CRUD user API (tidak ada di API_CONTRACT §3). Test: 16 unit + 6 e2e + tester 12 cek — hijau.
 
 ## Tahap 3 — Orders + Pricing Engine ⭐
 - [ ] Schema: `orders`, `order_items`.

@@ -1,6 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsOptional } from 'class-validator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SegmentType } from '../../generated/prisma/client';
 
@@ -18,11 +21,13 @@ class CodeSegmentQueryDto {
 }
 
 /**
- * Daftar segmen kode untuk form pembuatan produk/bundling (admin).
- * Data referensi kecil — tanpa paging.
- * TODO(Tahap 2): pasang JwtAuthGuard + RolesGuard(admin) SEBELUM deploy mana pun.
+ * Daftar segmen kode untuk form pembuatan produk/bundling.
+ * Data referensi kecil — tanpa paging. Hanya admin/owner (RBAC).
  */
 @ApiTags('catalog-admin')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin', 'owner')
 @Controller('code-segments')
 export class CodeSegmentsController {
   constructor(private readonly prisma: PrismaService) {}

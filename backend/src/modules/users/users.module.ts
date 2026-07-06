@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
+import { UsersService } from './users.service';
 
-/** Staf admin/gudang/owner — diisi di Tahap 2 (TASK_BREAKDOWN). */
-@Module({})
+/** Staff (admin/gudang/owner) — dipakai AuthModule; tanpa endpoint di MVP. */
+@Module({
+  providers: [UsersService],
+  exports: [UsersService],
+})
 export class UsersModule {}

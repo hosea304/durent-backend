@@ -7,8 +7,12 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { VouchersService } from './vouchers.service';
 import {
   CreateVoucherDto,
@@ -17,11 +21,13 @@ import {
 } from './dto/voucher.dto';
 
 /**
- * Kelola voucher (admin) — GET/POST/PATCH sesuai API_CONTRACT §4 (tanpa DELETE;
- * nonaktifkan via PATCH is_active=false).
- * TODO(Tahap 2): pasang JwtAuthGuard + RolesGuard(admin) SEBELUM deploy mana pun.
+ * Kelola voucher — hanya admin/owner (RBAC). GET/POST/PATCH sesuai API_CONTRACT §4
+ * (tanpa DELETE; nonaktifkan via PATCH is_active=false).
  */
 @ApiTags('catalog-admin')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin', 'owner')
 @Controller('vouchers')
 export class VouchersController {
   constructor(private readonly vouchers: VouchersService) {}

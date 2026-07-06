@@ -9,8 +9,12 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { BundlesService } from './bundles.service';
 import { CreateBundleDto, UpdateBundleDto } from './dto/bundle.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
@@ -36,11 +40,11 @@ export class BundlesController {
   }
 }
 
-/**
- * Kelola bundling (admin).
- * TODO(Tahap 2): pasang JwtAuthGuard + RolesGuard(admin) SEBELUM deploy mana pun.
- */
+/** Kelola bundling — hanya admin/owner (RBAC). */
 @ApiTags('catalog-admin')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin', 'owner')
 @Controller('bundles')
 export class BundlesAdminController {
   constructor(private readonly bundles: BundlesService) {}

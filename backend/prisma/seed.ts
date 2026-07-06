@@ -1,7 +1,8 @@
-// Seed code_segments (Master Data Item) — idempotent (upsert by segment_type+code).
+// Seed idempotent: code_segments (Master Data Item) + akun staff pertama.
 // Jalankan: npx prisma db seed
 // Sumber daftar kode: docs/CURRENT_SPREADSHEET_STRUCTURE.md §3.
 import 'dotenv/config';
+import * as argon2 from 'argon2';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, SegmentType } from '../src/generated/prisma/client';
 
@@ -106,6 +107,27 @@ async function main(): Promise<void> {
 
   const total = await prisma.codeSegment.count();
   console.log(`Seed selesai — ${total} code_segments di database.`);
+
+  // Akun staff pertama (role owner) dari env — password TIDAK ditimpa saat
+  // re-seed (upsert update kosong) agar penggantian password tak tereset.
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+  if (email && password) {
+    await prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: {
+        name: process.env.ADMIN_NAME ?? 'Owner DuRent',
+        email,
+        password_hash: await argon2.hash(password),
+        role: 'owner',
+      },
+    });
+    console.log(`Akun staff '${email}' siap (role owner).`);
+  } else {
+    console.log('ADMIN_EMAIL/ADMIN_PASSWORD tidak di-set — seed akun dilewati.');
+  }
+
   await prisma.$disconnect();
 }
 
