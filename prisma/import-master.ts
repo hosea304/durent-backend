@@ -30,6 +30,13 @@ if (!xlsxPath) {
   process.exit(1);
 }
 
+/**
+ * Produk yang DIPENSIUNKAN oleh pemilik di backend (2026-07-06) — import tidak
+ * boleh mengaktifkannya kembali. Shooting Package cukup tampil sebagai
+ * bundle DS-BI-PU-0001 (duplikatnya di Items Code disembunyikan).
+ */
+const RETIRED_CODES = new Set(['DS-RT-PU-SP-0001']);
+
 const TYPE_BY_UNIVERSAL: Record<string, ProductType> = {
   Rental: 'rental',
   Expendable: 'expendable',
@@ -226,10 +233,11 @@ async function main(): Promise<void> {
   let pUpserted = 0;
   for (const p of products) {
     const { fixed_code: _fixed, ...data } = p;
+    const is_active = !RETIRED_CODES.has(p.code);
     await prisma.product.upsert({
       where: { code: p.code },
-      update: { ...data, is_active: true },
-      create: data,
+      update: { ...data, is_active },
+      create: { ...data, is_active },
     });
     pUpserted++;
   }
