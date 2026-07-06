@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DuRent API Tester</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --ok: #16a34a; --fail: #dc2626; --wait: #9ca3af; --run: #d97706;
+    --border: #d1d5db; --bg-soft: rgba(128,128,128,.08);
+  }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, Segoe UI, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; } h1 small { font-weight: normal; opacity: .6; font-size: .9rem; }
+  .bar { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin: 1rem 0; }
+  input#base { flex: 1; min-width: 280px; padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 8px; font: inherit; }
+  button { padding: .5rem 1.1rem; border: 1px solid var(--border); border-radius: 8px; font: inherit; cursor: pointer; background: var(--bg-soft); }
+  button.primary { background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 600; }
+  button:disabled { opacity: .5; cursor: wait; }
+  #ringkas { margin: .75rem 0; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; opacity: .6; }
+  .badge { display: inline-block; min-width: 4.6rem; text-align: center; padding: .15rem .5rem; border-radius: 99px; font-size: .78rem; font-weight: 700; color: #fff; }
+  .b-wait { background: var(--wait); } .b-run { background: var(--run); }
+  .b-ok { background: var(--ok); } .b-fail { background: var(--fail); }
+  .metode { font-family: ui-monospace, Consolas, monospace; font-size: .82rem; white-space: nowrap; }
+  details { margin-top: .25rem; } summary { cursor: pointer; font-size: .82rem; opacity: .7; }
+  pre { background: var(--bg-soft); padding: .6rem; border-radius: 8px; font-size: .78rem; overflow-x: auto; max-height: 220px; }
+  .hint { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 10px; padding: .8rem 1rem; font-size: .9rem; }
+  .hint code { background: none; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>🧪 DuRent API Tester <small>— cek cepat backend hidup & berperilaku sesuai kontrak</small></h1>
+
+<div class="hint">
+  Jalankan backend dulu: buka terminal di folder <code>backend/</code> → <code>npm run start:dev</code>.
+  Setelah server hidup, klik <b>Jalankan Semua Tes</b>. Untuk mencoba endpoint satu-satu secara
+  interaktif, pakai Swagger: <a href="http://localhost:3000/api/docs" target="_blank">http://localhost:3000/api/docs</a>.
+</div>
+
+<div class="bar">
+  <input id="base" value="http://localhost:3000/api/v1" spellcheck="false" />
+  <button class="primary" id="run">▶ Jalankan Semua Tes</button>
+</div>
+
+<div id="ringkas"></div>
+<table>
+  <thead><tr><th style="width:6.2rem">Status</th><th>Tes</th><th style="width:38%">Keterangan</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<script>
+'use strict';
+
+/** Daftar tes — tiap tes: nama, method+path, fungsi cek terhadap (status, body). */
+const TESTS = [
+  {
+    nama: 'Health check', metode: 'GET /health',
+    jalan: (api) => api('GET', '/health'),
+    cek: (s, b) => s === 200 && b?.data?.status === 'ok'
+      ? null : 'harap status 200 & data.status="ok"',
+  },
+  {
+    nama: 'Katalog produk (list + paging)', metode: 'GET /products?limit=5',
+    jalan: (api) => api('GET', '/products?limit=5'),
+    cek: (s, b) => s === 200 && Array.isArray(b?.data) && Number.isInteger(b?.meta?.total) && b.meta.total >= 1
+      ? null : 'harap 200, data array, meta.total ≥ 1',
+  },
+  {
+    nama: 'Filter type=crew', metode: 'GET /products?type=crew',
+    jalan: (api) => api('GET', '/products?type=crew&limit=50'),
+    cek: (s, b) => s === 200 && b?.data?.length >= 1 && b.data.every((p) => p.type === 'crew')
+      ? null : 'harap 200 & semua baris type "crew"',
+  },
+  {
+    nama: 'Pencarian ?q=kursi', metode: 'GET /products?q=kursi',
+    jalan: (api) => api('GET', '/products?q=kursi'),
+    cek: (s, b) => s === 200 && b?.data?.length >= 1 && b.data.every((p) => p.name.toLowerCase().includes('kursi'))
+      ? null : 'harap 200 & semua nama mengandung "kursi"',
+  },
+  {
+    nama: 'Detail produk by kode', metode: 'GET /products/DS-RT-CM-HT-0001',
+    jalan: (api) => api('GET', '/products/DS-RT-CM-HT-0001'),
+    cek: (s, b) => s === 200 && b?.data?.name && Number.isInteger(b.data.base_price)
+      ? null : 'harap 200 dengan name & base_price integer',
+  },
+  {
+    nama: 'Bentuk error 404 sesuai kontrak', metode: 'GET /products/KODE-NGACO',
+    jalan: (api) => api('GET', '/products/KODE-NGACO'),
+    cek: (s, b) => s === 404 && b?.error?.code === 'NOT_FOUND' && typeof b.error.message === 'string' && Array.isArray(b.error.details)
+      ? null : 'harap 404 dengan {error:{code:"NOT_FOUND",message,details[]}}',
+  },
+  {
+    nama: 'Bundling + harga coret', metode: 'GET /bundles',
+    jalan: (api) => api('GET', '/bundles'),
+    cek: (s, b) => s === 200 && b?.data?.length >= 1 && b.data.every((x) => Number.isInteger(x.bundle_price) && Number.isInteger(x.original_price))
+      ? null : 'harap 200 & tiap bundle punya bundle_price + original_price',
+  },
+  {
+    nama: 'Detail bundling + komponen', metode: 'GET /bundles/DS-BI-CM-0001',
+    jalan: (api) => api('GET', '/bundles/DS-BI-CM-0001'),
+    cek: (s, b) => s === 200 && Array.isArray(b?.data?.items) && b.data.items.length >= 1
+      ? null : 'harap 200 dengan items[] ≥ 1 komponen',
+  },
+  {
+    nama: 'Kamus segmen kode', metode: 'GET /code-segments?segment_type=universal',
+    jalan: (api) => api('GET', '/code-segments?segment_type=universal'),
+    cek: (s, b) => s === 200 && b?.data?.some((x) => x.code === 'RT')
+      ? null : 'harap 200 & memuat kode "RT"',
+  },
+  {
+    nama: 'Daftar voucher (admin)', metode: 'GET /vouchers',
+    jalan: (api) => api('GET', '/vouchers?limit=100'),
+    cek: (s, b) => s === 200 && Number.isInteger(b?.meta?.total)
+      ? null : 'harap 200 dengan meta.total',
+  },
+  {
+    nama: 'Pratinjau kode produk baru', metode: 'POST /products/preview-code',
+    jalan: (api) => api('POST', '/products/preview-code', { type: 'rental', category_utama_code: 'CM', sub_category_code: 'HT' }),
+    cek: (s, b) => (s === 200 || s === 201) && /^DS-RT-CM-HT-\d{4}$/.test(b?.data?.code ?? '')
+      ? null : 'harap kode berpola DS-RT-CM-HT-NNNN',
+  },
+  {
+    nama: 'Validasi 422 + detail per field', metode: 'POST /products (body kosong)',
+    jalan: (api) => api('POST', '/products', {}),
+    cek: (s, b) => s === 422 && b?.error?.code === 'VALIDATION_FAILED' && b.error.details.length >= 1
+      ? null : 'harap 422 VALIDATION_FAILED dengan details[]',
+  },
+  {
+    nama: 'Swagger UI hidup', metode: 'GET /api/docs',
+    jalan: async (api, base) => {
+      const root = base.replace(/\/api\/v1\/?$/, '');
+      const res = await fetch(root + '/api/docs', { signal: AbortSignal.timeout(8000) });
+      return { status: res.status, body: '(halaman HTML Swagger)' };
+    },
+    cek: (s) => (s === 200 ? null : 'harap 200'),
+  },
+];
+
+const rowsEl = document.getElementById('rows');
+const ringkasEl = document.getElementById('ringkas');
+const runBtn = document.getElementById('run');
+
+function render(states) {
+  rowsEl.innerHTML = states.map((st, i) => `
+    <tr>
+      <td><span class="badge b-${st.kelas}">${st.label}</span></td>
+      <td><b>${TESTS[i].nama}</b><br><span class="metode">${TESTS[i].metode}</span></td>
+      <td>${st.ket ?? ''}${st.body ? `<details><summary>respons</summary><pre>${st.body}</pre></details>` : ''}</td>
+    </tr>`).join('');
+  const lulus = states.filter((s) => s.kelas === 'ok').length;
+  const gagal = states.filter((s) => s.kelas === 'fail').length;
+  ringkasEl.textContent = gagal === 0 && lulus === TESTS.length
+    ? `✅ Semua ${lulus} tes LULUS — backend sehat.`
+    : `Lulus ${lulus}/${TESTS.length}` + (gagal ? ` · ❌ gagal ${gagal}` : '');
+}
+
+async function runAll() {
+  runBtn.disabled = true;
+  const base = document.getElementById('base').value.replace(/\/+$/, '');
+  const api = async (method, path, body) => {
+    const res = await fetch(base + path, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(8000),
+    });
+    let parsed = null;
+    try { parsed = await res.json(); } catch { /* non-JSON */ }
+    return { status: res.status, body: parsed };
+  };
+
+  const states = TESTS.map(() => ({ kelas: 'wait', label: 'menunggu' }));
+  render(states);
+
+  for (let i = 0; i < TESTS.length; i++) {
+    states[i] = { kelas: 'run', label: 'jalan…' };
+    render(states);
+    try {
+      const { status, body } = await TESTS[i].jalan(api, base);
+      const salah = TESTS[i].cek(status, body);
+      states[i] = salah
+        ? { kelas: 'fail', label: 'GAGAL', ket: `HTTP ${status} — ${salah}`, body: JSON.stringify(body, null, 2)?.slice(0, 2000) }
+        : { kelas: 'ok', label: 'LULUS', ket: `HTTP ${status}` };
+    } catch (e) {
+      states[i] = { kelas: 'fail', label: 'GAGAL', ket: `Tidak bisa terhubung: ${e.message}. Apakah backend sudah jalan? (npm run start:dev di folder backend/)` };
+    }
+    render(states);
+  }
+  runBtn.disabled = false;
+}
+
+runBtn.addEventListener('click', runAll);
+render(TESTS.map(() => ({ kelas: 'wait', label: 'menunggu' })));
+</script>
+</body>
+</html>

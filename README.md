@@ -1,8 +1,25 @@
-# DuRent Support — Backend
+# DuRent Support — Aplikasi Rental Produksi Film/Event
 
-Backend untuk bisnis rental kebutuhan produksi **Film/Event** (DuRent Support), menggantikan sistem berbasis Google Spreadsheet + Apps Script menjadi backend profesional yang scalable & terdokumentasi.
+Sistem untuk bisnis rental kebutuhan produksi **Film/Event** (DuRent Support), menggantikan sistem berbasis Google Spreadsheet + Apps Script menjadi backend profesional yang scalable & terdokumentasi (frontend menyusul).
 
-**Status:** 🟢 Planning selesai (Phase 0–10) · stack terkunci (D20: NestJS + Prisma + PostgreSQL) · **Tahap 0 (scaffold) selesai** — lanjut Tahap 1 (Master/Catalog) di `docs/TASK_BREAKDOWN.md`.
+**Status:** 🟢 Planning selesai (Phase 0–10) · stack terkunci (D20: NestJS + Prisma + PostgreSQL) · Tahap 0 (scaffold) ✅ · **Tahap 1 (Master/Catalog) ✅ — data master asli sudah diimport** — berikutnya Tahap 2 (Auth) di `docs/TASK_BREAKDOWN.md`.
+
+## 🗂️ Struktur Repo (D23)
+
+| Folder | Isi | Kalau mau memperbaiki… |
+|---|---|---|
+| [`backend/`](backend/) | API NestJS + Prisma (semua kode server) | logika bisnis, endpoint, database → **di sini** |
+| [`frontend/`](frontend/) | *placeholder* — situs customer & dashboard admin (fase berikutnya) | tampilan/halaman web → **di sini** (nanti) |
+| [`docs/`](docs/) | Dokumentasi = **sumber kebenaran** bersama | aturan/kontrak/keputusan |
+| [`tools/`](tools/) | Alat bantu dev — `api-tester.html` (13 smoke test hijau/merah) | — |
+
+**Menjalankan & menguji backend** (semua perintah dari folder `backend/`):
+```
+npm run start:dev     # jalankan server (hot-reload) → http://localhost:3000
+npm test              # unit test
+npm run test:e2e      # end-to-end test
+```
+Uji visual: buka `tools/api-tester.html` di browser (klik **Jalankan Semua Tes**), atau Swagger UI di **http://localhost:3000/api/docs**.
 
 ---
 

@@ -1,26 +1,10 @@
-# dependencies
-/node_modules
-
-# build output
-/dist
-
-# environment (rahasia — jangan pernah dicommit)
+# Rahasia — jangan pernah commit file env dari level mana pun
 .env
 .env.local
 .env.*.local
 
-# logs
-*.log
-npm-debug.log*
-
-# test coverage
-/coverage
-
-# IDE / OS
-.vscode/
-.idea/
+# OS / IDE
 Thumbs.db
 .DS_Store
-
-# Prisma client hasil generate (npx prisma generate)
-/src/generated/prisma
+.vscode/
+.idea/
