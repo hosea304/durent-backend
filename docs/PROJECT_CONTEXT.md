@@ -5,9 +5,9 @@
 | Meta | Nilai |
 |---|---|
 | Nama proyek | DuRent Support — Backend Rental Produksi Film/Event |
-| Fase saat ini | **Build dimulai.** Tahap 0 (scaffold) ✅ selesai (D21) — berikutnya **Tahap 1: Master/Catalog** per `TASK_BREAKDOWN.md`. |
-| Status coding | 🟡 Scaffold NestJS+Prisma jalan (health check, kerangka 8 modul). Entity/endpoint bisnis **belum** dibuat. |
-| Terakhir diperbarui | 2026-07-03 |
+| Fase saat ini | **Build berjalan.** Tahap 0–3 ✅ (scaffold · catalog+import master · auth/RBAC · **orders+Pricing Engine, D25**) — berikutnya **Tahap 4: Payments** per `TASK_BREAKDOWN.md`. |
+| Status coding | 🟢 Katalog publik+admin, auth JWT, booking guest end-to-end (preview→create→lookup→confirm/status/cancel) jalan; migrasi `orders_order_items` diterapkan, e2e 12/12 hijau. |
+| Terakhir diperbarui | 2026-07-14 |
 | Bahasa | Indonesia (istilah teknis boleh Inggris) |
 
 ---

@@ -2,6 +2,7 @@
 // Tahap 1: master/catalog (code_segments, products, bundles, bundle_items, vouchers).
 // Tahap 2: users, customers · Tahap 3: orders, order_items · Tahap 4: payments ·
 // Tahap 5: penalties — lihat docs/TASK_BREAKDOWN.md.
+// Uang & total = SNAPSHOT saat order (R3); perubahan harga master tak mengubah histori.
 // Konvensi: field snake_case persis DATA_MODEL; uang = Int rupiah (D22).
 
 generator client {
@@ -51,6 +52,42 @@ enum UserRole {
   owner
 }
 
+/// Status Transaksi (BUSINESS_FLOW §3) — label FE di FRONTEND_PREPARATION §4
+enum OrderStatus {
+  pending
+  on_progress
+  completed
+  cancel
+}
+
+/// Status Pembayaran — default belum_lunas (D6); diturunkan dari ledger payments (Tahap 4)
+enum PaymentStatus {
+  belum_lunas
+  sebagian
+  lunas
+}
+
+/// Disposisi DP saat pembatalan (D15)
+enum DpDisposition {
+  refund_full
+  forfeit
+  partial
+  none
+}
+
+/// Baris order menunjuk produk ATAU bundle (D10)
+enum CatalogType {
+  product
+  bundle
+}
+
+/// Slot waktu kirim catering (BUSINESS_FLOW §9)
+enum DeliverySlot {
+  pagi
+  siang
+  sore
+}
+
 // ─── Aktor ──────────────────────────────────────────────────────────
 
 /// Staff (admin/gudang/owner) — login email+password (BACKEND_ARCHITECTURE §6)
@@ -65,6 +102,8 @@ model User {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
+  confirmed_orders Order[] @relation("OrderConfirmedBy")
+
   @@map("users")
 }
 
@@ -74,6 +113,7 @@ model Customer {
   name       String
   phone      String // kandidat dedup antar-order
   created_at DateTime @default(now())
+  orders     Order[]
 
   @@index([phone])
   @@map("customers")
@@ -112,6 +152,7 @@ model Product {
   created_at          DateTime     @default(now())
   updated_at          DateTime     @updatedAt
   bundle_items        BundleItem[]
+  order_items         OrderItem[]
 
   @@index([type, is_active])
   @@map("products")
@@ -130,6 +171,7 @@ model Bundle {
   created_at          DateTime     @default(now())
   updated_at          DateTime     @updatedAt
   items               BundleItem[]
+  order_items         OrderItem[]
 
   // original_price TIDAK disimpan — derived: Σ(qty × component_price) untuk harga coret FE
   @@map("bundles")
@@ -159,6 +201,77 @@ model Voucher {
   is_active  Boolean     @default(true)
   created_at DateTime    @default(now())
   updated_at DateTime    @updatedAt
+  orders     Order[]
 
   @@map("vouchers")
+}
+
+// ─── Transaksi (Tahap 3) ────────────────────────────────────────────
+
+/// Database Penyewaan (header) → orders — DATA_MODEL §3.5
+model Order {
+  id             String   @id @default(uuid()) @db.Uuid
+  code           String   @unique // DR-DDMMYY-NNNN, counter global (D7)
+  code_number    Int      @unique // NNNN global — MAX+1 tanpa parsing string (pola D22 ③)
+  invoice_date   DateTime @db.Date // tanggal dibuat; TETAP saat update (BUSINESS_FLOW §5)
+  customer_id    String   @db.Uuid
+  customer       Customer @relation(fields: [customer_id], references: [id])
+  customer_name  String // snapshot — histori tak berubah bila master berubah (R3)
+  customer_phone String // snapshot
+  alamat_shooting String
+  purpose        String
+  promo_code     String? // fk → vouchers.code; 1 voucher per order (D13)
+  voucher        Voucher? @relation(fields: [promo_code], references: [code])
+  is_dp          Boolean  @default(false) // flag DP 50% — TIDAK mengubah nilai total
+  deposit_percent Int     @default(0) // jaminan, D5 — persen bulat spt sheet
+  grand_total    Int // Σ sub_total (snapshot Pricing Engine)
+  deposit_amount Int // Σ rental_total × deposit% (pra-diskon)
+  total_with_deposit Int // grand_total + deposit_amount
+  status_transaksi  OrderStatus   @default(pending)
+  status_pembayaran PaymentStatus @default(belum_lunas) // D6; derived dari payments (Tahap 4)
+  confirmed_at   DateTime? // null = belum dikonfirmasi admin (D1)
+  confirmed_by   String?   @db.Uuid
+  confirmer      User?     @relation("OrderConfirmedBy", fields: [confirmed_by], references: [id])
+  cancelled_at   DateTime?
+  dp_disposition DpDisposition? // diisi saat cancel (D15)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  items          OrderItem[]
+
+  @@index([status_transaksi])
+  @@index([invoice_date])
+  @@map("orders")
+}
+
+/// Database Penyewaan (baris barang) → order_items — DATA_MODEL §3.6
+model OrderItem {
+  id           String      @id @default(uuid()) @db.Uuid
+  order_id     String      @db.Uuid
+  order        Order       @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  line_no      Int // urutan baris invoice — sheet mempertahankan urutan fisik (D8)
+  catalog_type CatalogType
+  product_id   String?     @db.Uuid // terisi salah satu sesuai catalog_type (D10)
+  product      Product?    @relation(fields: [product_id], references: [id])
+  bundle_id    String?     @db.Uuid
+  bundle       Bundle?     @relation(fields: [bundle_id], references: [id])
+  item_name    String // snapshot
+  item_code    String // snapshot
+  start_date   DateTime    @db.Date // per ITEM, bukan per order (BUSINESS_FLOW §2)
+  end_date     DateTime    @db.Date
+  duration     Int // (end-start)+1 inklusif
+  qty          Int
+  unit_price   Int // snapshot harga saat order
+  amount       Int // qty × unit_price
+  rental_total Int // duration × amount
+  is_discount  Boolean     @default(false)
+  discount_percent Int? // snapshot nilai voucher percent
+  discount_amount  Int? // snapshot nilai voucher nominal
+  sub_total    Int // rental_total setelah diskon
+  delivery_slot DeliverySlot? // catering
+  picked_up_at DateTime? // Phase 2 — checklist gudang
+  returned_at  DateTime? // Phase 2
+
+  @@unique([order_id, line_no])
+  @@index([order_id])
+  @@map("order_items")
 }

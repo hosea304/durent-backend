@@ -2,7 +2,7 @@
 
 > Rancangan endpoint **mengikuti flow rental**, bukan CRUD telanjang. Belum terikat framework. Basis: [`DATA_MODEL.md`](DATA_MODEL.md) · [`BUSINESS_FLOW.md`](BUSINESS_FLOW.md) · [`BACKEND_ARCHITECTURE.md`](BACKEND_ARCHITECTURE.md).
 >
-> Terakhir diperbarui: 2026-07-03 · **Konsep — belum final.**
+> Terakhir diperbarui: 2026-07-14 · §3 (Auth) ✅ Tahap 2 · §4 (Catalog) ✅ Tahap 1 · **§5 (Orders) ✅ Tahap 3 (D25)** — §6–8 menyusul Tahap 4–6.
 
 ---
 
@@ -130,10 +130,12 @@ Peran: 🟢 publik/guest · 🔵 admin · 🟠 gudang · 🟣 owner.
 | `GET /orders` | 🔵 | list + filter `?status=&payment=&q=&from=&to=` | dashboard admin |
 | `GET /orders/{code}` | 🔵 | detail **agregat** (items + billing + payments + penalties) — **1 panggilan** | siap-invoice; lihat §11 |
 | `GET /orders/lookup?code=&phone=` | 🟢 | **cek status** oleh customer (guest) | rate-limited; return ringkas |
-| `PATCH /orders/{code}` | 🔵 | edit order (mirip *UpdatePesanan*) | recompute total; **`code` & `invoice_date` tetap** |
-| `POST /orders/{code}/confirm` | 🔵 | **konfirmasi ketersediaan** (D1) | set `confirmed_at` (lihat §9) |
-| `POST /orders/{code}/status` | 🔵🟠 | ubah `status_transaksi` (on_progress/completed) | admin boleh **override** |
-| `POST /orders/{code}/cancel` | 🔵 | batalkan + `dp_disposition` (refund_full/forfeit/partial) | buat baris refund bila perlu (D15) |
+| `PATCH /orders/{code}` | 🔵 | edit order (mirip *UpdatePesanan*) | recompute total; **`code` & `invoice_date` tetap**; `items` dikirim = ganti seluruh baris (D25 ⑦) |
+| `POST /orders/{code}/confirm` | 🔵 | **konfirmasi ketersediaan** (D1) | set `confirmed_at`+`confirmed_by`; idempoten (lihat §9) |
+| `POST /orders/{code}/status` | 🔵🟠 | ubah `status_transaksi` (on_progress/completed) | admin boleh **override**; order cancel → 409 |
+| `POST /orders/{code}/cancel` | 🔵 | batalkan + `dp_disposition` (refund_full/forfeit/partial/none) | baris refund dicatat via `POST /payments` (Tahap 4, D15) |
+
+> **Catatan implementasi Tahap 3 (D25):** `GET /orders/{code}` sudah membalas bentuk agregat lengkap — `billing` (total_tagihan/total_paid/outstanding) dihitung; `payments[]` & `penalties[]` masih kosong sampai Tahap 4–5. Lookup guest menormalkan telepon (08… ≡ 628…) dan membalas 404 tunggal (privasi). Throttle publik: booking 5×/menit · lookup 10×/menit · preview 30×/menit.
 
 ---
 

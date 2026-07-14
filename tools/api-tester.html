@@ -169,6 +169,97 @@ const TESTS = [
       ? (s === 422 && b?.error?.code === 'VALIDATION_FAILED' && b.error.details.length >= 1 ? null : 'dengan token: harap 422 VALIDATION_FAILED + details[]')
       : (s === 401 ? null : 'tanpa token: harap DITOLAK 401'),
   },
+  // ── Orders (Tahap 3) — alur booking guest + kelola admin ──
+  {
+    nama: 'Preview harga booking (guest, tanpa simpan)', metode: 'POST /orders/preview',
+    jalan: async (api, base, ctx) => {
+      const prod = await api('GET', '/products?type=rental&limit=1');
+      ctx.produk = prod.body?.data?.[0] ?? null;
+      if (!ctx.produk) return { status: 0, body: 'katalog kosong — import master dulu' };
+      return api('POST', '/orders/preview', {
+        customer: { name: 'Tester API', phone: '081200003333' },
+        alamat_shooting: 'Studio Tester', purpose: 'Smoke test',
+        deposit_percent: 50,
+        items: [{ catalog_type: 'product', code: ctx.produk.code, start_date: '2026-08-01', end_date: '2026-08-02', qty: 2 }],
+      });
+    },
+    cek: (s, b, ctx) => {
+      if (!ctx.produk) return 'katalog kosong — jalankan import master dulu';
+      const it = b?.data?.items?.[0];
+      const harap = 2 * 2 * ctx.produk.base_price; // durasi 2 hari × qty 2 × harga
+      return s === 200 && it?.duration === 2 && it?.rental_total === harap
+        && b.data.total_with_deposit === b.data.grand_total + b.data.deposit_amount
+        ? null : `harap 200 & rental_total = ${harap} (2 hari × 2 × harga katalog)`;
+    },
+  },
+  {
+    nama: 'Validasi booking: tanggal terbalik ditolak', metode: 'POST /orders/preview (end < start)',
+    jalan: (api, base, ctx) => api('POST', '/orders/preview', {
+      customer: { name: 'Tester API', phone: '081200003333' },
+      alamat_shooting: 'Studio Tester', purpose: 'Smoke test',
+      items: [{ catalog_type: 'product', code: ctx.produk?.code ?? 'DS-RT-CM-HT-0001', start_date: '2026-08-05', end_date: '2026-08-01', qty: 1 }],
+    }),
+    cek: (s, b) => s === 422 && b?.error?.code === 'VALIDATION_FAILED' && b.error.details.length >= 1
+      ? null : 'harap 422 VALIDATION_FAILED + details[]',
+  },
+  {
+    nama: 'Buat booking guest ⭐ (order dev sungguhan — diakhiri cancel di tes akhir)', metode: 'POST /orders',
+    jalan: (api, base, ctx) => api('POST', '/orders', {
+      customer: { name: 'Tester API', phone: '081200003333' },
+      alamat_shooting: 'Studio Tester', purpose: 'Smoke test',
+      deposit_percent: 50,
+      items: [{ catalog_type: 'product', code: ctx.produk?.code ?? 'DS-RT-CM-HT-0001', start_date: '2026-08-01', end_date: '2026-08-02', qty: 2 }],
+    }),
+    cek: (s, b, ctx) => {
+      if (s === 201 && /^DR-\d{6}-\d{4,}$/.test(b?.data?.code ?? '')
+        && b.data.status_transaksi === 'pending' && b.data.status_pembayaran === 'belum_lunas'
+        && 'whatsapp_admin_url' in b.data) {
+        ctx.orderCode = b.data.code;
+        return null;
+      }
+      return 'harap 201 + kode DR-DDMMYY-NNNN + status pending/belum_lunas + whatsapp_admin_url';
+    },
+  },
+  {
+    nama: 'Cek status order oleh customer', metode: 'GET /orders/lookup?code=&phone=',
+    jalan: (api, base, ctx) => api('GET', `/orders/lookup?code=${encodeURIComponent(ctx.orderCode ?? '')}&phone=081200003333`),
+    cek: (s, b, ctx) => !ctx.orderCode ? 'tes booking sebelumnya gagal'
+      : (s === 200 && b?.data?.status_transaksi === 'pending' ? null : 'harap 200 dengan status pending'),
+  },
+  {
+    nama: 'Lookup dengan phone salah ditolak (privasi)', metode: 'GET /orders/lookup (phone salah)',
+    jalan: (api, base, ctx) => api('GET', `/orders/lookup?code=${encodeURIComponent(ctx.orderCode ?? 'DR-000000-0000')}&phone=089999999999`),
+    cek: (s, b) => s === 404 && b?.error?.code === 'NOT_FOUND' ? null : 'harap 404 (kode + phone harus cocok)',
+  },
+  {
+    nama: 'Admin: list order + filter status', metode: 'GET /orders?status=pending',
+    jalan: (api, base, ctx) => api('GET', '/orders?status=pending&limit=5', null, ctx.token),
+    cek: (s, b, ctx) => ctx.token
+      ? (s === 200 && Number.isInteger(b?.meta?.total) ? null : 'dengan token: harap 200 + meta.total')
+      : (s === 401 ? null : 'tanpa token: harap DITOLAK 401 (guard aktif)'),
+  },
+  {
+    nama: 'Admin: detail order agregat (1 panggilan)', metode: 'GET /orders/{code}',
+    jalan: (api, base, ctx) => api('GET', `/orders/${ctx.orderCode ?? 'DR-000000-0000'}`, null, ctx.token),
+    cek: (s, b, ctx) => ctx.token
+      ? (s === 200 && Array.isArray(b?.data?.items) && b?.data?.billing && Array.isArray(b?.data?.payments) && Array.isArray(b?.data?.penalties)
+        ? null : 'dengan token: harap 200 + items[] + billing + payments[] + penalties[]')
+      : (s === 401 ? null : 'tanpa token: harap DITOLAK 401'),
+  },
+  {
+    nama: 'Admin: konfirmasi ketersediaan (D1)', metode: 'POST /orders/{code}/confirm',
+    jalan: (api, base, ctx) => api('POST', `/orders/${ctx.orderCode ?? 'DR-000000-0000'}/confirm`, {}, ctx.token),
+    cek: (s, b, ctx) => ctx.token
+      ? (s === 200 && b?.data?.confirmed_at ? null : 'dengan token: harap 200 + confirmed_at terisi')
+      : (s === 401 ? null : 'tanpa token: harap DITOLAK 401'),
+  },
+  {
+    nama: 'Admin: batalkan order tes (bersih-bersih)', metode: 'POST /orders/{code}/cancel',
+    jalan: (api, base, ctx) => api('POST', `/orders/${ctx.orderCode ?? 'DR-000000-0000'}/cancel`, { dp_disposition: 'none' }, ctx.token),
+    cek: (s, b, ctx) => ctx.token
+      ? (s === 200 && b?.data?.status_transaksi === 'cancel' && b?.data?.cancelled_at ? null : 'dengan token: harap 200 status cancel')
+      : (s === 401 ? null : 'tanpa token: harap DITOLAK 401 — order tes tetap pending, batalkan manual bila perlu'),
+  },
   {
     nama: 'Swagger UI hidup', metode: 'GET /api/docs',
     jalan: async (api, base) => {

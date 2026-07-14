@@ -1,6 +1,6 @@
 # TASK_BREAKDOWN.md — Rincian Task Build
 
-> Daftar task untuk membangun MVP. **Update `[ ]`→`[x]` setiap task selesai** (DEVELOPMENT_RULES §9). Belum ada yang dikerjakan (masih planning). Terakhir diperbarui: 2026-07-03.
+> Daftar task untuk membangun MVP. **Update `[ ]`→`[x]` setiap task selesai** (DEVELOPMENT_RULES §9). Terakhir diperbarui: 2026-07-14.
 >
 > Status: ⬜ belum · 🟡 jalan · ✅ selesai.
 
@@ -23,14 +23,15 @@
 - [x] Schema `users` (role admin/gudang/owner) + `customers` (guest, index phone) — migrasi `auth_users_customers`.
 - [x] Login staff: `POST /auth/login` (throttle 5x/menit) → JWT (exp `JWT_EXPIRES_IN`, default 1d) + `GET /auth/me` + `POST /auth/logout` (stateless). Hash **argon2**; validasi token ke DB tiap request (user nonaktif langsung tertolak). RBAC `JwtAuthGuard`+`RolesGuard`+`@Roles` — 4 controller admin katalog dikunci `admin`+`owner`. Akun pertama (owner) via seed dari env. Tanpa CRUD user API (tidak ada di API_CONTRACT §3). Test: 16 unit + 6 e2e + tester 12 cek — hijau.
 
-## Tahap 3 — Orders + Pricing Engine ⭐
-- [ ] Schema: `orders`, `order_items`.
-- [ ] **Pricing Engine** (durasi, amount, rental_total, diskon, deposit, total) + **unit test paritas vs sheet**.
-- [ ] **Code Generator** order (`DR-DDMMYY-NNNN`, counter dari MAX+1).
-- [ ] `POST /orders/preview` & `POST /orders` (guest).
-- [ ] `GET /orders` (list ringkas) + `GET /orders/{code}` (agregat) + `GET /orders/lookup`.
-- [ ] `PATCH /orders/{code}`, `POST /confirm`, `POST /status`, `POST /cancel` (+ dp_disposition).
-- [ ] Integrasi WhatsApp (adapter) → `whatsapp_admin_url`.
+## Tahap 3 — Orders + Pricing Engine ⭐ ✅ (2026-07-14, D25)
+- [x] Schema: `orders`, `order_items` (+ kolom teknis `code_number`, `line_no` — D25) — migrasi `orders_order_items` **diterapkan** ke Supabase.
+- [x] **Pricing Engine** (`pricing-engine.ts`, fungsi murni): durasi inklusif, amount, rental_total, diskon persen/nominal per-baris, deposit pra-diskon, total + **15 unit test paritas vs formula sheet**.
+- [x] **Code Generator** order (`DR-DDMMYY-NNNN`): counter GLOBAL MAX+1 dari `code_number`, tanggal WIB, retry saat bentrok + unit test.
+- [x] `POST /orders/preview` & `POST /orders` (guest, throttle 30×/5×per menit): snapshot harga, dedup customer by phone, validasi (tanggal, aktif, min_qty catering, voucher case-insensitive).
+- [x] `GET /orders` (ringkas + filter status/payment/q/from/to + `?include=items`) + `GET /orders/{code}` (agregat: items+billing; payments/penalties kosong s.d. Tahap 4–5) + `GET /orders/lookup` (kode+phone, 404 tunggal).
+- [x] `PATCH /orders/{code}` (recompute; code & invoice_date tetap; items = replace-all), `POST /confirm` (idempoten, isi confirmed_at/by), `POST /status` (admin+gudang), `POST /cancel` (+ dp_disposition; order cancel menolak aksi lain 409).
+- [x] Integrasi WhatsApp (adapter, env `ADMIN_WA_NUMBER`) → `whatsapp_admin_url` di respons booking.
+- [x] Verifikasi: build + lint + 38 unit test + 12 e2e (+6 skenario orders) hijau; api-tester +9 tes (total 25).
 
 ## Tahap 4 — Payments
 - [ ] Schema `payments` (ledger). 

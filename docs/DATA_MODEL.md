@@ -2,7 +2,7 @@
 
 > ✅ **Semua keputusan model sudah dikonfirmasi pemilik** (R1–R6, Q1–Q6, D1–D15). Ini model **konseptual final** — tipe kolom, relasi, dan aturan. **Belum jadi migrasi/DDL** (itu dibuat saat fase build, setelah arsitektur Phase 4 disepakati).
 >
-> Pasangan: [`SPREADSHEET_TO_BACKEND_MAPPING.md`](SPREADSHEET_TO_BACKEND_MAPPING.md) · Keputusan: [`DECISION_LOG.md`](DECISION_LOG.md) · Terakhir diperbarui: 2026-07-03
+> Pasangan: [`SPREADSHEET_TO_BACKEND_MAPPING.md`](SPREADSHEET_TO_BACKEND_MAPPING.md) · Keputusan: [`DECISION_LOG.md`](DECISION_LOG.md) · Terakhir diperbarui: 2026-07-14 (D25: kolom teknis `orders.code_number` & `order_items.line_no`)
 
 ---
 
@@ -91,7 +91,8 @@ Future (Phase 2): stock_ledger · locations · activity_logs
 |---|---|---|
 | id | uuid | PK |
 | code | string(unique) | `DR-DDMMYY-NNNN`, counter global (D7) |
-| invoice_date | date | tanggal dibuat; **tetap saat update** |
+| code_number | int(unique) | *(teknis, D25)* NNNN global — MAX+1 tanpa parsing string (pola bundle D22) |
+| invoice_date | date | tanggal dibuat (zona WIB, D25); **tetap saat update** |
 | customer_id | fk customers | + snapshot `customer_name`, `customer_phone` |
 | alamat_shooting | string | per-order |
 | purpose | string | |
@@ -102,7 +103,7 @@ Future (Phase 2): stock_ledger · locations · activity_logs
 | deposit_amount | decimal | snapshot |
 | total_with_deposit | decimal | snapshot |
 | status_transaksi | enum | pending / on_progress / completed / cancel |
-| status_pembayaran | enum | **default belum_lunas** (D6); derived |
+| status_pembayaran | enum | belum_lunas / sebagian / lunas — **default belum_lunas** (D6); derived (label: FRONTEND_PREPARATION §4) |
 | confirmed_at, confirmed_by | timestamp?, fk users? | admin konfirmasi ketersediaan (D1/D11); null = belum dikonfirmasi |
 | cancelled_at | timestamp? | |
 | dp_disposition | enum? | refund_full / forfeit / partial / none (D15) |
@@ -113,6 +114,7 @@ Future (Phase 2): stock_ledger · locations · activity_logs
 |---|---|---|
 | id | uuid | PK |
 | order_id | fk | |
+| line_no | int | *(teknis, D25)* urutan baris invoice stabil (D8); unik per order |
 | catalog_type | enum | product / bundle |
 | product_id / bundle_id | fk? | salah satu |
 | item_name, item_code | string(snapshot) | |

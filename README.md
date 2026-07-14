@@ -2,7 +2,7 @@
 
 Sistem untuk bisnis rental kebutuhan produksi **Film/Event** (DuRent Support), menggantikan sistem berbasis Google Spreadsheet + Apps Script menjadi backend profesional yang scalable & terdokumentasi (frontend menyusul).
 
-**Status:** 🟢 Planning selesai (Phase 0–10) · stack terkunci (D20: NestJS + Prisma + PostgreSQL) · Tahap 0 (scaffold) ✅ · **Tahap 1 (Master/Catalog) ✅ — data master asli sudah diimport** — berikutnya Tahap 2 (Auth) di `docs/TASK_BREAKDOWN.md`.
+**Status:** 🟢 Tahap 0–3 ✅ — scaffold · Master/Catalog (data asli terimport) · Auth JWT+RBAC (D24) · **Orders + Pricing Engine (D25): booking guest, kode `DR-`, konfirmasi/status/cancel admin** (migrasi terapply, e2e 12/12 hijau) — berikutnya Tahap 4 (Payments) di `docs/TASK_BREAKDOWN.md`.
 
 ## 🗂️ Struktur Repo (D23)
 
@@ -11,7 +11,7 @@ Sistem untuk bisnis rental kebutuhan produksi **Film/Event** (DuRent Support), m
 | [`backend/`](backend/) | API NestJS + Prisma (semua kode server) | logika bisnis, endpoint, database → **di sini** |
 | [`frontend/`](frontend/) | *placeholder* — situs customer & dashboard admin (fase berikutnya) | tampilan/halaman web → **di sini** (nanti) |
 | [`docs/`](docs/) | Dokumentasi = **sumber kebenaran** bersama | aturan/kontrak/keputusan |
-| [`tools/`](tools/) | Alat bantu dev — `api-tester.html` (13 smoke test hijau/merah) | — |
+| [`tools/`](tools/) | Alat bantu dev — `api-tester.html` (25 smoke test hijau/merah, termasuk alur booking) | — |
 
 **Menjalankan & menguji backend** (semua perintah dari folder `backend/`):
 ```
@@ -61,8 +61,8 @@ Semua konteks proyek ada di folder [`docs/`](docs/). **Sebelum melakukan apa pun
 - Semua keputusan detail: [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md).
 
 ## ⏭️ Langkah Berikutnya
-- Tech stack sudah dipilih: **NestJS + Prisma (TypeScript) + PostgreSQL** (lihat `docs/TECH_STACK.md`).
-- Mulai build sesuai [`docs/TASK_BREAKDOWN.md`](docs/TASK_BREAKDOWN.md) → **Tahap 0: scaffold**.
+- Review pemilik atas D25 ① (pembulatan Rp1 diskon persen/deposit) & ⑥ (dedup customer per phone) di `docs/DECISION_LOG.md`.
+- Lanjut build [`docs/TASK_BREAKDOWN.md`](docs/TASK_BREAKDOWN.md) → **Tahap 4: Payments** (ledger dp/pelunasan/refund + derive status pembayaran).
 
 ---
 
@@ -76,10 +76,10 @@ Ini proyek backend DuRent Support. Sebelum apa pun, baca README.md lalu
 docs/PROJECT_CONTEXT.md dan docs/DEVELOPMENT_RULES.md (plus file yang dirujuk).
 Ikuti dokumentasi sebagai sumber kebenaran: JANGAN ubah flow bisnis, data model,
 atau API tanpa persetujuan saya, dan catat keputusan penting ke docs/DECISION_LOG.md.
-Kita lanjut dari docs/TASK_BREAKDOWN.md mulai Tahap 0 (scaffold NestJS + Prisma +
-PostgreSQL). Tunjukkan rencana scaffold-nya dulu dan minta persetujuan sebelum menulis kode.
+Lanjutkan dari docs/TASK_BREAKDOWN.md pada tahap pertama yang belum selesai
+(kerjakan ⚠️ catatan tertunda lebih dulu bila ada).
 ```
 
-3. Claude Code akan membaca konteks, lalu mengusulkan langkah scaffold — Anda tinggal setujui/koreksi.
+3. Claude Code akan membaca konteks, lalu mengusulkan langkah berikutnya — Anda tinggal setujui/koreksi.
 
 > Prompt pembuka **versi lengkap** (siap salin) ada di [`docs/SESSION_START_PROMPT.md`](docs/SESSION_START_PROMPT.md). Aturan main lengkap di [`docs/DEVELOPMENT_RULES.md`](docs/DEVELOPMENT_RULES.md).
