@@ -16,6 +16,12 @@ import {
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { ListResponse, listResponse } from '../../common/utils/list-response';
 import { WhatsappAdapter } from '../integrations/whatsapp.adapter';
+import {
+  buildBilling,
+  derivePaymentStatus,
+  totalPaid,
+} from '../payments/payment-status';
+import { paymentRow } from '../payments/payments.service';
 import { OrderCodeService } from './order-code.service';
 import {
   durationDays,
@@ -262,23 +268,22 @@ export class OrdersService {
   }
 
   /**
-   * Detail AGREGAT — 1 panggilan berisi items + billing (+ payments/penalties
-   * menyusul Tahap 4–5; bentuk respons sudah disiapkan agar kontrak FE stabil).
+   * Detail AGREGAT — 1 panggilan berisi items + billing + payments
+   * (+ penalties menyusul Tahap 5; bentuk respons stabil untuk FE).
    */
   async detail(code: string): Promise<{ data: unknown }> {
     const order = await this.findByCodeOrThrow(code);
-    const total_tagihan = order.total_with_deposit; // + Σ denda (Tahap 5)
-    const total_paid = 0; // Σ ledger payments (Tahap 4)
+    const payments = await this.prisma.payment.findMany({
+      where: { order_id: order.id },
+      orderBy: [{ paid_date: 'asc' }, { created_at: 'asc' }],
+    });
+    // total_tagihan = total_with_deposit + Σ denda (Tahap 5)
+    const billing = buildBilling(order.total_with_deposit, payments);
     return {
       data: {
         ...this.toOrderResponse(order),
-        billing: {
-          total_tagihan,
-          total_paid,
-          outstanding: total_tagihan - total_paid,
-          status_pembayaran: order.status_pembayaran,
-        },
-        payments: [],
+        billing,
+        payments: payments.map((p) => paymentRow(p)),
         penalties: [],
       },
     };
@@ -319,9 +324,19 @@ export class OrdersService {
 
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.orderItem.deleteMany({ where: { order_id: order.id } });
+      // Total tagihan berubah → status pembayaran diturunkan ulang dari ledger
+      const ledger = await tx.payment.findMany({
+        where: { order_id: order.id },
+        select: { kind: true, amount: true },
+      });
+      const status_pembayaran = derivePaymentStatus(
+        priced.total_with_deposit,
+        totalPaid(ledger),
+      );
       return tx.order.update({
         where: { id: order.id },
         data: {
+          status_pembayaran,
           // snapshot penyewa boleh dikoreksi; relasi customer_id tetap
           ...(dto.customer
             ? {

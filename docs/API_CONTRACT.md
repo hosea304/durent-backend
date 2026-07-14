@@ -2,7 +2,7 @@
 
 > Rancangan endpoint **mengikuti flow rental**, bukan CRUD telanjang. Belum terikat framework. Basis: [`DATA_MODEL.md`](DATA_MODEL.md) · [`BUSINESS_FLOW.md`](BUSINESS_FLOW.md) · [`BACKEND_ARCHITECTURE.md`](BACKEND_ARCHITECTURE.md).
 >
-> Terakhir diperbarui: 2026-07-14 · §3 (Auth) ✅ Tahap 2 · §4 (Catalog) ✅ Tahap 1 · **§5 (Orders) ✅ Tahap 3 (D25)** — §6–8 menyusul Tahap 4–6.
+> Terakhir diperbarui: 2026-07-14 · §3 (Auth) ✅ Tahap 2 · §4 (Catalog) ✅ Tahap 1 · §5 (Orders) ✅ Tahap 3 (D25) · **§6 (Payments) ✅ Tahap 4 (D26)** — §7–8 menyusul Tahap 5–6.
 
 ---
 
@@ -146,7 +146,8 @@ Peran: 🟢 publik/guest · 🔵 admin · 🟠 gudang · 🟣 owner.
 | `GET /orders/{code}/payments` | 🔵 | daftar ledger |
 | `POST /orders/{code}/payments` | 🔵 | tambah pembayaran `{ kind: dp\|pelunasan\|refund, amount, paid_date, note? }` → recompute status |
 
-> Lunas bila `Σ(dp+pelunasan) − Σ refund ≥ total_tagihan`. Default **belum_lunas** (D6).
+> Lunas bila `Σ(dp+pelunasan) − Σ refund ≥ total_tagihan`. Default **belum_lunas** (D6); di antaranya `sebagian`.
+> **Catatan implementasi Tahap 4 (D26):** semua amount ledger positif (refund dikurangkan saat derivasi); order cancel hanya menerima refund (409 untuk dp/pelunasan); respons `POST /payments` = `{payment, billing}`; status di-recompute juga saat `PATCH /orders/{code}`.
 
 ---
 

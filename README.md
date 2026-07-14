@@ -2,7 +2,7 @@
 
 Sistem untuk bisnis rental kebutuhan produksi **Film/Event** (DuRent Support), menggantikan sistem berbasis Google Spreadsheet + Apps Script menjadi backend profesional yang scalable & terdokumentasi (frontend menyusul).
 
-**Status:** 🟢 Tahap 0–3 ✅ — scaffold · Master/Catalog (data asli terimport) · Auth JWT+RBAC (D24) · **Orders + Pricing Engine (D25): booking guest, kode `DR-`, konfirmasi/status/cancel admin** (migrasi terapply, e2e 12/12 hijau) — berikutnya Tahap 4 (Payments) di `docs/TASK_BREAKDOWN.md`.
+**Status:** 🟢 Tahap 0–4 ✅ — scaffold · Master/Catalog (data asli terimport) · Auth JWT+RBAC (D24) · Orders + Pricing Engine (D25) · **Payments: ledger dp/pelunasan/refund + status belum_lunas/sebagian/lunas (D26)** (e2e 17/17 hijau) — berikutnya Tahap 5 (Penalties) di `docs/TASK_BREAKDOWN.md`.
 
 ## 🗂️ Struktur Repo (D23)
 
@@ -11,7 +11,7 @@ Sistem untuk bisnis rental kebutuhan produksi **Film/Event** (DuRent Support), m
 | [`backend/`](backend/) | API NestJS + Prisma (semua kode server) | logika bisnis, endpoint, database → **di sini** |
 | [`frontend/`](frontend/) | *placeholder* — situs customer & dashboard admin (fase berikutnya) | tampilan/halaman web → **di sini** (nanti) |
 | [`docs/`](docs/) | Dokumentasi = **sumber kebenaran** bersama | aturan/kontrak/keputusan |
-| [`tools/`](tools/) | Alat bantu dev — `api-tester.html` (25 smoke test hijau/merah, termasuk alur booking) | — |
+| [`tools/`](tools/) | Alat bantu dev — `api-tester.html` (27 smoke test hijau/merah, termasuk alur booking + pembayaran) | — |
 
 **Menjalankan & menguji backend** (semua perintah dari folder `backend/`):
 ```
@@ -62,7 +62,7 @@ Semua konteks proyek ada di folder [`docs/`](docs/). **Sebelum melakukan apa pun
 
 ## ⏭️ Langkah Berikutnya
 - Review pemilik atas D25 ① (pembulatan Rp1 diskon persen/deposit) & ⑥ (dedup customer per phone) di `docs/DECISION_LOG.md`.
-- Lanjut build [`docs/TASK_BREAKDOWN.md`](docs/TASK_BREAKDOWN.md) → **Tahap 4: Payments** (ledger dp/pelunasan/refund + derive status pembayaran).
+- Lanjut build [`docs/TASK_BREAKDOWN.md`](docs/TASK_BREAKDOWN.md) → **Tahap 5: Penalties** (denda `-D`: kerusakan/kehilangan/overtime, masuk total tagihan).
 
 ---
 

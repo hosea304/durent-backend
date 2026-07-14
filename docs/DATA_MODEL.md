@@ -136,9 +136,10 @@ Future (Phase 2): stock_ledger · locations · activity_logs
 | id | uuid | PK |
 | order_id | fk | |
 | kind | enum | dp / pelunasan / refund |
-| amount | decimal | refund bernilai negatif/terpisah |
+| amount | decimal | **positif untuk semua kind** — refund dikurangkan saat derivasi (D26) |
 | paid_date | date | |
 | note | string? | |
+| created_at | timestamp | *(teknis, D26)* urutan ledger stabil |
 > `total_tagihan` = `orders.total_with_deposit` + Σ `penalties.grand_total`. Lunas bila Σ(dp+pelunasan) − Σ refund ≥ total_tagihan.
 
 ### 3.8 `penalties` / `penalty_items`

@@ -337,4 +337,136 @@ describe('Backend DuRent (e2e)', () => {
         .expect(409);
     });
   });
+
+  describe('Payments — ledger & status pembayaran (Tahap 4)', () => {
+    let token: string;
+    let orderCode: string;
+    let total: number; // total_with_deposit = total_tagihan (belum ada denda)
+
+    interface BillingBody {
+      total_tagihan: number;
+      total_paid: number;
+      outstanding: number;
+      status_pembayaran: string;
+    }
+
+    const pay = (kind: string, amount: number) =>
+      request(app.getHttpServer())
+        .post(`/api/v1/orders/${orderCode}/payments`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ kind, amount, paid_date: '2026-08-03' });
+
+    beforeAll(async () => {
+      const login = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({
+          email: process.env.ADMIN_EMAIL,
+          password: process.env.ADMIN_PASSWORD,
+        })
+        .expect(200);
+      token = (login.body as LoginBody).data.access_token;
+
+      const products = await request(app.getHttpServer())
+        .get('/api/v1/products?type=rental&limit=1')
+        .expect(200);
+      const product = (products.body as { data: Array<{ code: string }> })
+        .data[0];
+
+      const created = await request(app.getHttpServer())
+        .post('/api/v1/orders')
+        .send({
+          customer: { name: 'Tester E2E Bayar', phone: '081200004444' },
+          alamat_shooting: 'Studio E2E, Jakarta',
+          purpose: 'Uji pembayaran',
+          deposit_percent: 50,
+          items: [
+            {
+              catalog_type: 'product',
+              code: product.code,
+              start_date: '2026-08-10',
+              end_date: '2026-08-11',
+              qty: 2,
+            },
+          ],
+        })
+        .expect(201);
+      const data = (
+        created.body as { data: { code: string; total_with_deposit: number } }
+      ).data;
+      orderCode = data.code;
+      total = data.total_with_deposit;
+    });
+
+    it('billing awal: outstanding = total & belum_lunas (D6); tanpa token 401', async () => {
+      await request(app.getHttpServer())
+        .get(`/api/v1/orders/${orderCode}/billing`)
+        .expect(401);
+
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/orders/${orderCode}/billing`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const billing = (res.body as { data: BillingBody }).data;
+      expect(billing.total_tagihan).toBe(total);
+      expect(billing.total_paid).toBe(0);
+      expect(billing.outstanding).toBe(total);
+      expect(billing.status_pembayaran).toBe('belum_lunas');
+    });
+
+    it('DP separuh → sebagian; pelunasan sisa → lunas (paritas: dibayar ≥ tagihan)', async () => {
+      const dpAmount = Math.floor(total / 2);
+      const dp = await pay('dp', dpAmount).expect(201);
+      expect(
+        (dp.body as { data: { billing: BillingBody } }).data.billing
+          .status_pembayaran,
+      ).toBe('sebagian');
+
+      const lunas = await pay('pelunasan', total - dpAmount).expect(201);
+      const billing = (lunas.body as { data: { billing: BillingBody } }).data
+        .billing;
+      expect(billing.total_paid).toBe(total);
+      expect(billing.outstanding).toBe(0);
+      expect(billing.status_pembayaran).toBe('lunas');
+    });
+
+    it('detail agregat kini memuat ledger + billing nyata (D17)', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/orders/${orderCode}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const data = (
+        res.body as {
+          data: {
+            payments: Array<{ kind: string; amount: number }>;
+            billing: BillingBody;
+            status_pembayaran: string;
+          };
+        }
+      ).data;
+      expect(data.payments).toHaveLength(2);
+      expect(data.billing.status_pembayaran).toBe('lunas');
+      expect(data.status_pembayaran).toBe('lunas'); // dipersist di order
+    });
+
+    it('validasi: amount 0 & kind ngawur → 422', async () => {
+      const res = await pay('hadiah', 0).expect(422);
+      expect((res.body as ErrorBody).error.code).toBe('VALIDATION_FAILED');
+    });
+
+    it('order cancel: dp ditolak 409, refund diterima → belum_lunas (D15/D26)', async () => {
+      await request(app.getHttpServer())
+        .post(`/api/v1/orders/${orderCode}/cancel`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ dp_disposition: 'refund_full' })
+        .expect(200);
+
+      await pay('dp', 1000).expect(409);
+
+      const refund = await pay('refund', total).expect(201);
+      const billing = (refund.body as { data: { billing: BillingBody } }).data
+        .billing;
+      expect(billing.total_paid).toBe(0);
+      expect(billing.status_pembayaran).toBe('belum_lunas');
+    });
+  });
 });

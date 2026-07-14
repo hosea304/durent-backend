@@ -33,9 +33,9 @@
 - [x] Integrasi WhatsApp (adapter, env `ADMIN_WA_NUMBER`) → `whatsapp_admin_url` di respons booking.
 - [x] Verifikasi: build + lint + 38 unit test + 12 e2e (+6 skenario orders) hijau; api-tester +9 tes (total 25).
 
-## Tahap 4 — Payments
-- [ ] Schema `payments` (ledger). 
-- [ ] `POST /payments` (dp/pelunasan/refund) + `GET /billing` + derive status pembayaran (default belum_lunas — D6).
+## Tahap 4 — Payments ✅ (2026-07-14, D26)
+- [x] Schema `payments` (ledger: kind dp/pelunasan/refund, amount positif, paid_date, note; + `created_at` teknis) — migrasi `payments` diterapkan.
+- [x] `POST /orders/{code}/payments` (recompute status tiap mutasi; order cancel hanya menerima refund) + `GET /payments` + `GET /billing` (total_tagihan/total_paid/outstanding) + derive status belum_lunas/sebagian/lunas (D6; fungsi murni `payment-status.ts` + 10 unit test paritas). Detail agregat order kini memuat ledger nyata; PATCH order me-recompute status. Verifikasi: 48 unit + 17 e2e hijau; api-tester +2 tes (total 27).
 
 ## Tahap 5 — Penalties
 - [ ] Schema `penalties`, `penalty_items`.

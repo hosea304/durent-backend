@@ -215,6 +215,7 @@ const TESTS = [
         && b.data.status_transaksi === 'pending' && b.data.status_pembayaran === 'belum_lunas'
         && 'whatsapp_admin_url' in b.data) {
         ctx.orderCode = b.data.code;
+        ctx.orderTotal = b.data.total_with_deposit;
         return null;
       }
       return 'harap 201 + kode DR-DDMMYY-NNNN + status pending/belum_lunas + whatsapp_admin_url';
@@ -251,6 +252,22 @@ const TESTS = [
     jalan: (api, base, ctx) => api('POST', `/orders/${ctx.orderCode ?? 'DR-000000-0000'}/confirm`, {}, ctx.token),
     cek: (s, b, ctx) => ctx.token
       ? (s === 200 && b?.data?.confirmed_at ? null : 'dengan token: harap 200 + confirmed_at terisi')
+      : (s === 401 ? null : 'tanpa token: harap DITOLAK 401'),
+  },
+  {
+    nama: 'Admin: catat pembayaran DP → status "sebagian"', metode: 'POST /orders/{code}/payments',
+    jalan: (api, base, ctx) => api('POST', `/orders/${ctx.orderCode ?? 'DR-000000-0000'}/payments`,
+      { kind: 'dp', amount: Math.max(1, Math.floor((ctx.orderTotal ?? 2) / 2)), paid_date: '2026-08-03', note: 'DP smoke test' }, ctx.token),
+    cek: (s, b, ctx) => ctx.token
+      ? (s === 201 && b?.data?.billing?.status_pembayaran === 'sebagian' ? null : 'dengan token: harap 201 + billing.status_pembayaran "sebagian"')
+      : (s === 401 ? null : 'tanpa token: harap DITOLAK 401'),
+  },
+  {
+    nama: 'Admin: billing ringkas (tagihan − dibayar = sisa)', metode: 'GET /orders/{code}/billing',
+    jalan: (api, base, ctx) => api('GET', `/orders/${ctx.orderCode ?? 'DR-000000-0000'}/billing`, null, ctx.token),
+    cek: (s, b, ctx) => ctx.token
+      ? (s === 200 && b?.data?.total_paid > 0 && b.data.outstanding === b.data.total_tagihan - b.data.total_paid
+        ? null : 'dengan token: harap 200 + total_paid > 0 + outstanding konsisten')
       : (s === 401 ? null : 'tanpa token: harap DITOLAK 401'),
   },
   {

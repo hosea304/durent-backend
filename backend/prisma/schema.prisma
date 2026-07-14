@@ -88,6 +88,13 @@ enum DeliverySlot {
   sore
 }
 
+/// Jenis baris ledger pembayaran (R5/D15)
+enum PaymentKind {
+  dp
+  pelunasan
+  refund
+}
+
 // ─── Aktor ──────────────────────────────────────────────────────────
 
 /// Staff (admin/gudang/owner) — login email+password (BACKEND_ARCHITECTURE §6)
@@ -237,6 +244,7 @@ model Order {
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
   items          OrderItem[]
+  payments       Payment[]
 
   @@index([status_transaksi])
   @@index([invoice_date])
@@ -274,4 +282,20 @@ model OrderItem {
   @@unique([order_id, line_no])
   @@index([order_id])
   @@map("order_items")
+}
+
+/// Input Pelunasan (file finance) → payments — LEDGER: 1 order banyak baris (R5).
+/// Semua amount POSITIF; refund DIKURANGKAN saat derivasi status (D26).
+model Payment {
+  id         String      @id @default(uuid()) @db.Uuid
+  order_id   String      @db.Uuid
+  order      Order       @relation(fields: [order_id], references: [id])
+  kind       PaymentKind
+  amount     Int // rupiah positif
+  paid_date  DateTime    @db.Date // = Tanggal Bayar
+  note       String?
+  created_at DateTime    @default(now()) // urutan ledger stabil (teknis, D26)
+
+  @@index([order_id])
+  @@map("payments")
 }

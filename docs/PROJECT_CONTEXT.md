@@ -5,8 +5,8 @@
 | Meta | Nilai |
 |---|---|
 | Nama proyek | DuRent Support — Backend Rental Produksi Film/Event |
-| Fase saat ini | **Build berjalan.** Tahap 0–3 ✅ (scaffold · catalog+import master · auth/RBAC · **orders+Pricing Engine, D25**) — berikutnya **Tahap 4: Payments** per `TASK_BREAKDOWN.md`. |
-| Status coding | 🟢 Katalog publik+admin, auth JWT, booking guest end-to-end (preview→create→lookup→confirm/status/cancel) jalan; migrasi `orders_order_items` diterapkan, e2e 12/12 hijau. |
+| Fase saat ini | **Build berjalan.** Tahap 0–4 ✅ (scaffold · catalog+import master · auth/RBAC · orders+Pricing Engine D25 · **payments/ledger D26**) — berikutnya **Tahap 5: Penalties** per `TASK_BREAKDOWN.md`. |
+| Status coding | 🟢 Booking guest end-to-end + pembayaran (dp→pelunasan→refund, status belum_lunas/sebagian/lunas) jalan; e2e 17/17 hijau. |
 | Terakhir diperbarui | 2026-07-14 |
 | Bahasa | Indonesia (istilah teknis boleh Inggris) |
 
