@@ -298,6 +298,14 @@ const TESTS = [
       : (s === 401 ? null : 'tanpa token: harap DITOLAK 401'),
   },
   {
+    nama: 'Payload invoice = detail agregat (D8)', metode: 'GET /orders/{code}/invoice',
+    jalan: (api, base, ctx) => api('GET', `/orders/${ctx.orderCode ?? 'DR-000000-0000'}/invoice`, null, ctx.token),
+    cek: (s, b, ctx) => ctx.token
+      ? (s === 200 && Array.isArray(b?.data?.items) && Array.isArray(b?.data?.penalties) && b?.data?.code === ctx.orderCode
+        ? null : 'dengan token: harap 200 + bentuk sama seperti detail order')
+      : (s === 401 ? null : 'tanpa token: harap DITOLAK 401'),
+  },
+  {
     nama: 'Admin: batalkan order tes (bersih-bersih)', metode: 'POST /orders/{code}/cancel',
     jalan: (api, base, ctx) => api('POST', `/orders/${ctx.orderCode ?? 'DR-000000-0000'}/cancel`, { dp_disposition: 'none' }, ctx.token),
     cek: (s, b, ctx) => ctx.token

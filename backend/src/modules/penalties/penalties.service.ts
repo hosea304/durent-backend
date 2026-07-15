@@ -155,14 +155,21 @@ export class PenaltiesService {
     return { data: penaltyRow(penalty, orderAfter) };
   }
 
-  /** Denda milik order — array 0/1 elemen (konsisten dengan agregat detail). */
-  async byOrder(orderCode: string): Promise<{ data: unknown[] }> {
+  /**
+   * Denda milik order — array 0/1 elemen (D14; konsisten dengan agregat
+   * detail). TANPA page/limit (bounded), `meta.total` tetap ada agar FE
+   * konsisten (empty-state, FRONTEND_PREPARATION §3).
+   */
+  async byOrder(
+    orderCode: string,
+  ): Promise<{ data: unknown[]; meta: { total: number } }> {
     const order = await this.findOrderOrThrow(orderCode);
     const penalty = await this.prisma.penalty.findUnique({
       where: { order_id: order.id },
       include: { items: true },
     });
-    return { data: penalty ? [penaltyRow(penalty, order)] : [] };
+    const data = penalty ? [penaltyRow(penalty, order)] : [];
+    return { data, meta: { total: data.length } };
   }
 
   /** Detail denda by kode `…-D` + ringkas billing order induk. */

@@ -95,6 +95,15 @@ export class OrdersAdminController {
     return this.orders.detail(code);
   }
 
+  @Get(':code/invoice')
+  @ApiOperation({
+    summary:
+      'Payload siap-invoice (header+items+totals+deposit+denda+ringkas bayar), tanpa PDF (D8)',
+  })
+  invoice(@Param('code') code: string) {
+    return this.orders.invoice(code);
+  }
+
   @Patch(':code')
   @ApiOperation({
     summary: 'Edit order — recompute total; code & invoice_date tetap (admin)',

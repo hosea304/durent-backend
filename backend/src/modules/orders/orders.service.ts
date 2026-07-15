@@ -298,6 +298,15 @@ export class OrdersService {
     };
   }
 
+  /**
+   * Payload siap-invoice (API_CONTRACT §8, D8) — TANPA PDF, dirender manual.
+   * BUSINESS_FLOW §5: "Invoice = view dari order" (nomor invoice = kode
+   * order, tanpa penomoran terpisah) → sama persis dengan detail agregat.
+   */
+  invoice(code: string): Promise<{ data: unknown }> {
+    return this.detail(code);
+  }
+
   // ── Admin: kelola order ────────────────────────────────────────────
 
   /**

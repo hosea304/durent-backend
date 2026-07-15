@@ -448,6 +448,33 @@ describe('Backend DuRent (e2e)', () => {
       expect(data.status_pembayaran).toBe('lunas'); // dipersist di order
     });
 
+    it('GET /payments: ledger konsisten + meta.total (Tahap 6 — konsistensi list)', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/orders/${orderCode}/payments`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const body = res.body as { data: unknown[]; meta: { total: number } };
+      expect(body.data).toHaveLength(2);
+      expect(body.meta.total).toBe(2);
+    });
+
+    it('GET /invoice: payload sama dengan detail agregat (D8 — invoice = view dari order)', async () => {
+      const [detail, invoice] = await Promise.all([
+        request(app.getHttpServer())
+          .get(`/api/v1/orders/${orderCode}`)
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200),
+        request(app.getHttpServer())
+          .get(`/api/v1/orders/${orderCode}/invoice`)
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200),
+      ]);
+      expect(invoice.body).toEqual(detail.body);
+      await request(app.getHttpServer())
+        .get(`/api/v1/orders/${orderCode}/invoice`)
+        .expect(401); // tanpa token: guard aktif
+    });
+
     it('validasi: amount 0 & kind ngawur → 422', async () => {
       const res = await pay('hadiah', 0).expect(422);
       expect((res.body as ErrorBody).error.code).toBe('VALIDATION_FAILED');
@@ -614,6 +641,30 @@ describe('Backend DuRent (e2e)', () => {
         }
       ).data;
       expect(data.billing.total_tagihan).toBe(orderTotal + dendaTotal);
+    });
+
+    it('GET /penalties (by order): array 1 elemen + meta.total (Tahap 6 — konsistensi list)', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/orders/${orderCode}/penalties`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const body = res.body as { data: unknown[]; meta: { total: number } };
+      expect(body.data).toHaveLength(1);
+      expect(body.meta.total).toBe(1);
+    });
+
+    it('GET /invoice order berdenda: sama dengan detail agregat, memuat penalties[] (D8)', async () => {
+      const [detail, invoice] = await Promise.all([
+        request(app.getHttpServer())
+          .get(`/api/v1/orders/${orderCode}`)
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200),
+        request(app.getHttpServer())
+          .get(`/api/v1/orders/${orderCode}/invoice`)
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200),
+      ]);
+      expect(invoice.body).toEqual(detail.body);
     });
 
     it('pelunasan penuh (order + denda) → status lunas', async () => {

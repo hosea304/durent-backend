@@ -83,14 +83,21 @@ export class PaymentsService {
     };
   }
 
-  /** Daftar ledger milik order — urut tanggal bayar lalu waktu input. */
-  async listByOrder(orderCode: string): Promise<{ data: unknown[] }> {
+  /**
+   * Ledger 1 order — realistis hanya beberapa baris (dp/pelunasan/refund),
+   * jadi TANPA page/limit (spt code-segments Tahap 1); `meta.total` tetap
+   * disertakan agar FE konsisten (empty-state, FRONTEND_PREPARATION §3).
+   */
+  async listByOrder(
+    orderCode: string,
+  ): Promise<{ data: unknown[]; meta: { total: number } }> {
     const order = await this.findOrderOrThrow(orderCode);
     const payments = await this.prisma.payment.findMany({
       where: { order_id: order.id },
       orderBy: [{ paid_date: 'asc' }, { created_at: 'asc' }],
     });
-    return { data: payments.map((p) => this.toPaymentResponse(p)) };
+    const data = payments.map((p) => this.toPaymentResponse(p));
+    return { data, meta: { total: data.length } };
   }
 
   /** Ringkas tagihan (API_CONTRACT §6). */

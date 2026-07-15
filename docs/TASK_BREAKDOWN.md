@@ -1,6 +1,6 @@
 # TASK_BREAKDOWN.md — Rincian Task Build
 
-> Daftar task untuk membangun MVP. **Update `[ ]`→`[x]` setiap task selesai** (DEVELOPMENT_RULES §9). Terakhir diperbarui: 2026-07-14.
+> Daftar task untuk membangun MVP. **Update `[ ]`→`[x]` setiap task selesai** (DEVELOPMENT_RULES §9). Terakhir diperbarui: 2026-07-15.
 >
 > Status: ⬜ belum · 🟡 jalan · ✅ selesai.
 
@@ -41,10 +41,10 @@
 - [x] Schema `penalties` (1:1 order, kode `{order}-D`), `penalty_items` (+ `line_no` teknis) — migrasi `penalties` diterapkan. `status_transaksi`/`status_pembayaran` TIDAK disimpan ganda — derived dari order induk saat respons.
 - [x] `POST /orders/{code}/penalties` (SATU per order — D14, order cancel ditolak, denda kedua → 409) + `GET /orders/{code}/penalties` (array 0/1) + `GET /penalties/{code}` (detail + billing). Kategori incl. **overtime** (D4). `grand_total = Σ qty×denda_per_qty`, menambah `total_tagihan` → status pembayaran order di-recompute (juga terintegrasi ke billing/payments & detail agregat `GET /orders/{code}`). Verifikasi: 51 unit + 23 e2e hijau; api-tester +3 tes (total 30).
 
-## Tahap 6 — Invoice & Kesiapan FE
-- [ ] `GET /orders/{code}/invoice` (payload lengkap, tanpa PDF — D8).
-- [ ] ~~`GET /dashboard/summary`~~ → **ditunda ke Future** (D19).
-- [ ] Konsistensi format (integer rupiah, ISO, enum) + error shape + pagination di semua list.
+## Tahap 6 — Invoice & Kesiapan FE ✅ (2026-07-15, D28)
+- [x] `GET /orders/{code}/invoice` — alias murni dari detail agregat order (payload lengkap: header+items+totals+deposit+denda+ringkas bayar, tanpa PDF — D8).
+- [x] ~~`GET /dashboard/summary`~~ → **ditunda ke Future** (D19).
+- [x] Konsistensi format diaudit — uang/tanggal/enum/error shape sudah konsisten sejak awal; `meta:{total}` ditambahkan ke `GET .../payments` & `GET .../penalties` (list terikat-order, tanpa page/limit — pola code-segments). Verifikasi: 51 unit + 27 e2e hijau; api-tester +1 tes (31 total).
 
 ## Tahap 7 — Cross-cutting
 - [ ] Validasi (API + service) menyeluruh.

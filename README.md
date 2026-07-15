@@ -2,7 +2,7 @@
 
 Sistem untuk bisnis rental kebutuhan produksi **Film/Event** (DuRent Support), menggantikan sistem berbasis Google Spreadsheet + Apps Script menjadi backend profesional yang scalable & terdokumentasi (frontend menyusul).
 
-**Status:** 🟢 Tahap 0–5 ✅ — scaffold · Master/Catalog (data asli terimport) · Auth JWT+RBAC (D24) · Orders + Pricing Engine (D25) · Payments/ledger (D26) · **Penalties: denda `-D` (1/order), kategori incl. overtime, masuk total tagihan (D27)** (e2e 23/23 hijau) — berikutnya Tahap 6 (Invoice & Kesiapan FE) di `docs/TASK_BREAKDOWN.md`.
+**Status:** 🟢 **Backend MVP lengkap (Tahap 0–6) ✅** — scaffold · Master/Catalog · Auth JWT+RBAC (D24) · Orders + Pricing Engine (D25) · Payments/ledger (D26) · Penalties (D27) · **Invoice (`GET /orders/{code}/invoice`) + konsistensi format/list (D28)** (e2e 27/27 hijau) — berikutnya Tahap 7 (cross-cutting) & Tahap 8 (migrasi/go-live) di `docs/TASK_BREAKDOWN.md`.
 
 ## 🗂️ Struktur Repo (D23)
 
@@ -11,7 +11,7 @@ Sistem untuk bisnis rental kebutuhan produksi **Film/Event** (DuRent Support), m
 | [`backend/`](backend/) | API NestJS + Prisma (semua kode server) | logika bisnis, endpoint, database → **di sini** |
 | [`frontend/`](frontend/) | *placeholder* — situs customer & dashboard admin (fase berikutnya) | tampilan/halaman web → **di sini** (nanti) |
 | [`docs/`](docs/) | Dokumentasi = **sumber kebenaran** bersama | aturan/kontrak/keputusan |
-| [`tools/`](tools/) | Alat bantu dev — `api-tester.html` (30 smoke test hijau/merah, termasuk alur booking + pembayaran + denda) | — |
+| [`tools/`](tools/) | Alat bantu dev — `api-tester.html` (31 smoke test otomatis) · `simulator.html` (simulasi manual interaktif: booking, bayar, denda) | — |
 
 **Menjalankan & menguji backend** (semua perintah dari folder `backend/`):
 ```
@@ -62,7 +62,7 @@ Semua konteks proyek ada di folder [`docs/`](docs/). **Sebelum melakukan apa pun
 
 ## ⏭️ Langkah Berikutnya
 - Review pemilik: D25 ① (pembulatan Rp1 diskon persen/deposit) & ⑥ (dedup customer per phone); D27 ① (`penalties.status_*` tidak disimpan, di-derive dari order — menyimpang dari `DATA_MODEL.md` awal). Lihat `docs/DECISION_LOG.md`.
-- Lanjut build [`docs/TASK_BREAKDOWN.md`](docs/TASK_BREAKDOWN.md) → **Tahap 6: Invoice & Kesiapan FE** (`GET /orders/{code}/invoice`, konsistensi format).
+- Backend MVP (Tahap 0–6) sudah lengkap secara fungsional. Lanjut build [`docs/TASK_BREAKDOWN.md`](docs/TASK_BREAKDOWN.md) → **Tahap 7: Cross-cutting** (validasi menyeluruh, audit log, rate-limit, anti-N+1) sebelum **Tahap 8: Migrasi & Go-Live**.
 
 ---
 

@@ -2,7 +2,7 @@
 
 > Rancangan endpoint **mengikuti flow rental**, bukan CRUD telanjang. Belum terikat framework. Basis: [`DATA_MODEL.md`](DATA_MODEL.md) · [`BUSINESS_FLOW.md`](BUSINESS_FLOW.md) · [`BACKEND_ARCHITECTURE.md`](BACKEND_ARCHITECTURE.md).
 >
-> Terakhir diperbarui: 2026-07-14 · §3 (Auth) ✅ Tahap 2 · §4 (Catalog) ✅ Tahap 1 · §5 (Orders) ✅ Tahap 3 (D25) · §6 (Payments) ✅ Tahap 4 (D26) · **§7 (Penalties) ✅ Tahap 5 (D27)** — §8 menyusul Tahap 6.
+> Terakhir diperbarui: 2026-07-15 · §3 (Auth) ✅ Tahap 2 · §4 (Catalog) ✅ Tahap 1 · §5 (Orders) ✅ Tahap 3 (D25) · §6 (Payments) ✅ Tahap 4 (D26) · §7 (Penalties) ✅ Tahap 5 (D27) · **§8 (Invoice) ✅ Tahap 6 (D28)** — MVP backend lengkap; sisanya Tahap 7 (cross-cutting) & 8 (migrasi/go-live).
 
 ---
 
@@ -143,7 +143,7 @@ Peran: 🟢 publik/guest · 🔵 admin · 🟠 gudang · 🟣 owner.
 | Method · Path | Peran | Fungsi |
 |---|---|---|
 | `GET /orders/{code}/billing` | 🔵 | ringkas tagihan: `total_tagihan` (order+denda), `total_paid`, `outstanding`, `status_pembayaran` |
-| `GET /orders/{code}/payments` | 🔵 | daftar ledger |
+| `GET /orders/{code}/payments` | 🔵 | daftar ledger — `{data[], meta:{total}}` (D28, tanpa page/limit — bounded) |
 | `POST /orders/{code}/payments` | 🔵 | tambah pembayaran `{ kind: dp\|pelunasan\|refund, amount, paid_date, note? }` → recompute status |
 
 > Lunas bila `Σ(dp+pelunasan) − Σ refund ≥ total_tagihan`. Default **belum_lunas** (D6); di antaranya `sebagian`.
@@ -155,7 +155,7 @@ Peran: 🟢 publik/guest · 🔵 admin · 🟠 gudang · 🟣 owner.
 | Method · Path | Peran | Fungsi |
 |---|---|---|
 | `POST /orders/{code}/penalties` | 🔵 | buat denda `-D` (1 per order, D14); body `items[]: {product_name, product_code, category(kerusakan\|kehilangan\|overtime\|lainnya), reason, qty, denda_per_qty}` |
-| `GET /orders/{code}/penalties` | 🔵 | denda milik order |
+| `GET /orders/{code}/penalties` | 🔵 | denda milik order — `{data[], meta:{total}}`, array 0/1 elemen (D14/D28) |
 | `GET /penalties/{code}` | 🔵 | detail denda (`…-D`) |
 
 > Server generate kode `-D`, hitung `denda_total = qty × denda_per_qty` & grand_total. Overtime = kategori (D4).
@@ -168,6 +168,8 @@ Peran: 🟢 publik/guest · 🔵 admin · 🟠 gudang · 🟣 owner.
 |---|---|---|
 | `GET /orders/{code}/invoice` | 🔵 | **payload siap-invoice** (header+items+totals+deposit+denda+ringkas bayar). **Tanpa PDF** (D8) — Anda render manual |
 | *(sistem)* WhatsApp | — | saat `POST /orders`, backend siapkan **notifikasi/URL ke admin WA** (via adapter integrasi) |
+
+> **Catatan implementasi Tahap 6 (D28):** `GET /orders/{code}/invoice` = alias murni `GET /orders/{code}` (payload identik) — sesuai BUSINESS_FLOW §5 "Invoice = view dari order, tanpa penomoran terpisah".
 
 ---
 
