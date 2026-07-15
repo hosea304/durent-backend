@@ -2,7 +2,7 @@
 
 > Rancangan endpoint **mengikuti flow rental**, bukan CRUD telanjang. Belum terikat framework. Basis: [`DATA_MODEL.md`](DATA_MODEL.md) · [`BUSINESS_FLOW.md`](BUSINESS_FLOW.md) · [`BACKEND_ARCHITECTURE.md`](BACKEND_ARCHITECTURE.md).
 >
-> Terakhir diperbarui: 2026-07-14 · §3 (Auth) ✅ Tahap 2 · §4 (Catalog) ✅ Tahap 1 · §5 (Orders) ✅ Tahap 3 (D25) · **§6 (Payments) ✅ Tahap 4 (D26)** — §7–8 menyusul Tahap 5–6.
+> Terakhir diperbarui: 2026-07-14 · §3 (Auth) ✅ Tahap 2 · §4 (Catalog) ✅ Tahap 1 · §5 (Orders) ✅ Tahap 3 (D25) · §6 (Payments) ✅ Tahap 4 (D26) · **§7 (Penalties) ✅ Tahap 5 (D27)** — §8 menyusul Tahap 6.
 
 ---
 
@@ -159,6 +159,7 @@ Peran: 🟢 publik/guest · 🔵 admin · 🟠 gudang · 🟣 owner.
 | `GET /penalties/{code}` | 🔵 | detail denda (`…-D`) |
 
 > Server generate kode `-D`, hitung `denda_total = qty × denda_per_qty` & grand_total. Overtime = kategori (D4).
+> **Catatan implementasi Tahap 5 (D27):** satu denda per order ditegakkan (percobaan kedua → 409 CONFLICT); order cancel menolak denda baru (409); `GET .../penalties` membalas array 0/1 elemen; `status_transaksi`/`status_pembayaran` di respons di-derive dari order induk (tidak disimpan terpisah); `grand_total` denda menambah `total_tagihan` di `GET /billing` & detail agregat order.
 
 ---
 

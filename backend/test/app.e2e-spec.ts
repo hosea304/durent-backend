@@ -469,4 +469,192 @@ describe('Backend DuRent (e2e)', () => {
       expect(billing.status_pembayaran).toBe('belum_lunas');
     });
   });
+
+  describe('Penalties — denda -D, 1 per order, masuk total tagihan (Tahap 5)', () => {
+    interface BillingBody {
+      total_tagihan: number;
+      total_paid: number;
+      outstanding: number;
+      status_pembayaran: string;
+    }
+
+    let token: string;
+    let orderCode: string;
+    let orderTotal: number;
+
+    const pay = (kind: string, amount: number) =>
+      request(app.getHttpServer())
+        .post(`/api/v1/orders/${orderCode}/payments`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ kind, amount, paid_date: '2026-08-22' });
+
+    const penaltyBody = {
+      items: [
+        {
+          product_name: 'Handy Talky',
+          product_code: 'DS-RT-CM-HT-0001',
+          category: 'kerusakan',
+          reason: 'Antena patah saat pengembalian',
+          qty: 1,
+          denda_per_qty: 75_000,
+        },
+        {
+          product_name: 'Runner',
+          product_code: 'DS-CW-RN-0001',
+          category: 'overtime',
+          reason: 'Lembur 2 jam',
+          qty: 2,
+          denda_per_qty: 50_000, // aturan overtime kru (D4)
+        },
+      ],
+    };
+    const dendaTotal = 75_000 + 2 * 50_000; // 175.000
+
+    beforeAll(async () => {
+      const login = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({
+          email: process.env.ADMIN_EMAIL,
+          password: process.env.ADMIN_PASSWORD,
+        })
+        .expect(200);
+      token = (login.body as LoginBody).data.access_token;
+
+      const products = await request(app.getHttpServer())
+        .get('/api/v1/products?type=rental&limit=1')
+        .expect(200);
+      const product = (products.body as { data: Array<{ code: string }> })
+        .data[0];
+
+      const created = await request(app.getHttpServer())
+        .post('/api/v1/orders')
+        .send({
+          customer: { name: 'Tester E2E Denda', phone: '081200005555' },
+          alamat_shooting: 'Studio E2E, Jakarta',
+          purpose: 'Uji denda',
+          deposit_percent: 0,
+          items: [
+            {
+              catalog_type: 'product',
+              code: product.code,
+              start_date: '2026-08-20',
+              end_date: '2026-08-20',
+              qty: 1,
+            },
+          ],
+        })
+        .expect(201);
+      const data = (
+        created.body as { data: { code: string; total_with_deposit: number } }
+      ).data;
+      orderCode = data.code;
+      orderTotal = data.total_with_deposit;
+    });
+
+    it('tanpa token → 401; buat denda → 201 dengan grand_total = Σ qty×denda_per_qty', async () => {
+      await request(app.getHttpServer())
+        .post(`/api/v1/orders/${orderCode}/penalties`)
+        .send(penaltyBody)
+        .expect(401);
+
+      const res = await request(app.getHttpServer())
+        .post(`/api/v1/orders/${orderCode}/penalties`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(penaltyBody)
+        .expect(201);
+      const data = (
+        res.body as {
+          data: { code: string; grand_total: number; items: unknown[] };
+        }
+      ).data;
+      expect(data.code).toBe(`${orderCode}-D`);
+      expect(data.grand_total).toBe(dendaTotal);
+      expect(data.items).toHaveLength(2);
+    });
+
+    it('denda kedua pada order yang sama ditolak 409 (D14: 1 per order)', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/v1/orders/${orderCode}/penalties`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(penaltyBody)
+        .expect(409);
+      expect((res.body as ErrorBody).error.code).toBe('CONFLICT');
+    });
+
+    it('billing order kini menghitung denda ke total_tagihan', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/orders/${orderCode}/billing`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const billing = (
+        res.body as { data: { total_tagihan: number; outstanding: number } }
+      ).data;
+      expect(billing.total_tagihan).toBe(orderTotal + dendaTotal);
+      expect(billing.outstanding).toBe(orderTotal + dendaTotal);
+    });
+
+    it('detail agregat order memuat penalties[]; GET /penalties/{code} berisi billing', async () => {
+      const detail = await request(app.getHttpServer())
+        .get(`/api/v1/orders/${orderCode}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const penalties = (
+        detail.body as { data: { penalties: Array<{ code: string }> } }
+      ).data.penalties;
+      expect(penalties).toHaveLength(1);
+      expect(penalties[0].code).toBe(`${orderCode}-D`);
+
+      const byCode = await request(app.getHttpServer())
+        .get(`/api/v1/penalties/${orderCode}-D`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const data = (
+        byCode.body as {
+          data: { billing: { total_tagihan: number } };
+        }
+      ).data;
+      expect(data.billing.total_tagihan).toBe(orderTotal + dendaTotal);
+    });
+
+    it('pelunasan penuh (order + denda) → status lunas', async () => {
+      const res = await pay('pelunasan', orderTotal + dendaTotal).expect(201);
+      const billing = (res.body as { data: { billing: BillingBody } }).data
+        .billing;
+      expect(billing.status_pembayaran).toBe('lunas');
+    });
+
+    it('order cancel tidak bisa diberi denda baru', async () => {
+      const other = await request(app.getHttpServer())
+        .post('/api/v1/orders')
+        .send({
+          customer: { name: 'Tester E2E Denda Cancel', phone: '081200006666' },
+          alamat_shooting: 'Studio E2E, Jakarta',
+          purpose: 'Uji denda order cancel',
+          items: [
+            {
+              catalog_type: 'product',
+              code: 'DS-RT-CM-HT-0001',
+              start_date: '2026-08-21',
+              end_date: '2026-08-21',
+              qty: 1,
+            },
+          ],
+        })
+        .expect(201);
+      const cancelCode = (other.body as { data: { code: string } }).data.code;
+
+      await request(app.getHttpServer())
+        .post(`/api/v1/orders/${cancelCode}/cancel`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ dp_disposition: 'none' })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .post(`/api/v1/orders/${cancelCode}/penalties`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(penaltyBody)
+        .expect(409);
+      expect((res.body as ErrorBody).error.code).toBe('CONFLICT');
+    });
+  });
 });

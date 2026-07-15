@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DuRent Simulator</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #fdf7ff; --card: #ffffff; --text: #332b52; --muted: #7a7396;
+    --border: #ecdff9; --shadow: 0 6px 18px rgba(124, 92, 255, .10);
+    --purple: #8b5cf6; --purple-dark: #7440e0;
+    --pink: #ff5c8a; --green: #22c55e; --blue: #3aa0ff; --amber: #ffb020;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif; max-width: 1000px; margin: 1.5rem auto;
+    padding: 0 1rem 4rem; line-height: 1.55; background: var(--bg); color: var(--text);
+  }
+  h1 { font-size: 1.5rem; margin-bottom: .2rem; }
+  h1 small { font-weight: normal; opacity: .65; font-size: .85rem; }
+  h2 { font-size: 1.05rem; margin: 0 0 .8rem; padding-bottom: .4rem; border-bottom: 2px dashed var(--border); }
+  h3 { color: var(--purple-dark); }
+  section {
+    background: var(--card); border: 1px solid var(--border); border-radius: 18px;
+    padding: 1.15rem 1.25rem; margin-bottom: 1.2rem; box-shadow: var(--shadow);
+    border-top: 6px solid var(--accent, var(--purple));
+  }
+  section.sec-blue { --accent: var(--blue); }
+  section.sec-green { --accent: var(--green); }
+  section.sec-pink { --accent: var(--pink); }
+  section.sec-amber { --accent: var(--amber); }
+  section.sec-purple { --accent: var(--purple); }
+  label { display: block; font-size: .78rem; color: var(--muted); font-weight: 600; margin: .4rem 0 .15rem; }
+  input, select, textarea {
+    padding: .5rem .65rem; border: 1.5px solid var(--border); border-radius: 10px;
+    font: inherit; width: 100%; background: #fff; color: var(--text);
+  }
+  input:focus, select:focus { outline: none; border-color: var(--purple); }
+  .row { display: flex; gap: .7rem; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 140px; }
+  button {
+    padding: .5rem 1.15rem; border: none; border-radius: 999px; font: inherit; font-weight: 700;
+    cursor: pointer; background: #f1ebff; color: var(--purple-dark); margin: .3rem .4rem .3rem 0;
+    transition: transform .1s ease, box-shadow .1s ease;
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,.08); }
+  button:active { transform: translateY(0); }
+  button.primary { background: linear-gradient(135deg, var(--purple), var(--pink)); color: #fff; }
+  button.go { background: var(--green); color: #fff; }
+  button.info { background: var(--blue); color: #fff; }
+  button.warn { background: var(--amber); color: #4a3300; }
+  button.danger { background: var(--pink); color: #fff; }
+  table { width: 100%; border-collapse: collapse; margin: .6rem 0; font-size: .85rem; }
+  th, td { text-align: left; padding: .45rem .5rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  th { font-size: .7rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  tbody tr:hover { background: #faf6ff; }
+  pre {
+    background: #f8f5ff; border: 1.5px dashed var(--border); padding: .7rem .9rem; border-radius: 12px;
+    font-size: .78rem; overflow-x: auto; max-height: 320px; white-space: pre-wrap; word-break: break-word;
+    color: #453c66;
+  }
+  pre.err { border-color: var(--pink); background: #fff0f4; color: #9c1c46; }
+  pre.ok { border-color: var(--green); background: #f0fdf5; color: #146c34; }
+  .hint { font-size: .8rem; color: var(--muted); margin: .3rem 0; }
+  .qty-input { width: 4.5rem; }
+  .flex-btns { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<h1>🎉 DuRent Simulator <small>— coba alur backend secara manual, tanpa tampilan rapi</small></h1>
+<p class="hint">Jalankan backend dulu (folder <code>backend/</code> → <code>npm run start:dev</code>). Semua respons API ditampilkan apa adanya (JSON) di bawah tiap aksi — itulah cara Anda memverifikasi backend berjalan benar.</p>
+
+<section class="sec-blue">
+  <h2>🔌 0. Koneksi</h2>
+  <div class="row">
+    <div style="flex:3"><label>Base URL</label><input id="base" value="http://localhost:3000/api/v1" /></div>
+    <div style="flex:1; display:flex; align-items:flex-end;"><button class="info" id="health-btn" style="width:100%">Cek Health</button></div>
+  </div>
+  <pre id="health-result">(belum dicek)</pre>
+</section>
+
+<section class="sec-green">
+  <h2>🛍️ 1. Katalog</h2>
+  <div class="row">
+    <div><label>Filter tipe</label>
+      <select id="catalog-type">
+        <option value="">(semua)</option>
+        <option value="rental">rental</option>
+        <option value="expendable">expendable</option>
+        <option value="catering">catering</option>
+        <option value="crew">crew</option>
+      </select>
+    </div>
+    <div><label>Tgl mulai (dipakai saat "+ Keranjang")</label><input id="cart-start" type="date" value="2026-08-10" /></div>
+    <div><label>Tgl selesai</label><input id="cart-end" type="date" value="2026-08-11" /></div>
+    <div style="display:flex; align-items:flex-end;"><button class="info" id="catalog-load-btn" style="width:100%">Muat Produk + Bundle</button></div>
+  </div>
+  <table>
+    <thead><tr><th>Kode</th><th>Nama</th><th>Tipe</th><th>Harga</th><th>Qty</th><th></th></tr></thead>
+    <tbody id="catalog-body"><tr><td colspan="6" class="hint">— klik "Muat Produk + Bundle" —</td></tr></tbody>
+  </table>
+</section>
+
+<section class="sec-purple">
+  <h2>🛒 2. Keranjang &amp; Booking</h2>
+  <table>
+    <thead><tr><th>Tipe</th><th>Kode</th><th>Nama</th><th>Qty</th><th>Mulai</th><th>Selesai</th><th>Slot</th><th></th></tr></thead>
+    <tbody id="cart-body"><tr><td colspan="8" class="hint">(kosong)</td></tr></tbody>
+  </table>
+  <div class="row">
+    <div><label>Nama Customer</label><input id="cust-name" value="Simulasi Tester" /></div>
+    <div><label>No Telepon</label><input id="cust-phone" value="081234500001" /></div>
+    <div><label>Alamat Shooting</label><input id="cust-alamat" value="Studio Simulasi, Jakarta" /></div>
+    <div><label>Purpose</label><input id="cust-purpose" value="Simulasi manual" /></div>
+  </div>
+  <div class="row">
+    <div><label>Kode Promo (opsional)</label><input id="cust-promo" placeholder="mis. BUNDLE5" /></div>
+    <div><label>Deposit %</label><input id="cust-deposit" type="number" value="50" min="0" max="100" /></div>
+    <div style="display:flex; align-items:flex-end; gap:.4rem;">
+      <label style="display:flex; align-items:center; gap:.3rem; margin:0;"><input type="checkbox" id="cust-isdp" style="width:auto" checked /> is_dp</label>
+      <label style="display:flex; align-items:center; gap:.3rem; margin:0;"><input type="checkbox" id="cust-alldiscount" style="width:auto" /> diskon semua baris</label>
+    </div>
+  </div>
+  <div class="flex-btns">
+    <button class="warn" id="preview-btn">Preview Harga (tanpa simpan)</button>
+    <button class="primary" id="submit-btn">🚀 Submit Booking (buat order sungguhan)</button>
+  </div>
+  <pre id="booking-result">(belum ada aksi)</pre>
+</section>
+
+<section class="sec-blue">
+  <h2>🔍 3. Cek Status Order (Guest)</h2>
+  <div class="row">
+    <div><label>Kode Order</label><input id="lookup-code" placeholder="DR-DDMMYY-NNNN" /></div>
+    <div><label>No Telepon</label><input id="lookup-phone" /></div>
+    <div style="display:flex; align-items:flex-end;"><button class="info" id="lookup-btn" style="width:100%">Cek Status</button></div>
+  </div>
+  <pre id="lookup-result">(belum dicek)</pre>
+</section>
+
+<section class="sec-amber">
+  <h2>🔑 4. Login Admin</h2>
+  <div class="row">
+    <div><label>Email</label><input id="admin-email" type="email" /></div>
+    <div><label>Password</label><input id="admin-password" type="password" /></div>
+    <div style="display:flex; align-items:flex-end;"><button class="primary" id="login-btn" style="width:100%">Login</button></div>
+  </div>
+  <p id="login-status" class="hint">Belum login.</p>
+</section>
+
+<section class="sec-pink">
+  <h2>⚙️ 5. Kelola Order (Admin)</h2>
+  <button class="info" id="orders-load-btn">Muat Daftar Order (20 terbaru)</button>
+  <table>
+    <thead><tr><th>Kode</th><th>Customer</th><th>Status</th><th>Bayar</th><th>Total+Deposit</th><th></th></tr></thead>
+    <tbody id="orders-body"><tr><td colspan="6" class="hint">— klik "Muat Daftar Order" —</td></tr></tbody>
+  </table>
+
+  <div class="row">
+    <div style="flex:2"><label>Kode Order yang dikelola</label><input id="detail-code" placeholder="DR-DDMMYY-NNNN" /></div>
+    <div style="display:flex; align-items:flex-end;"><button class="info" id="detail-load-btn" style="width:100%">Muat Detail</button></div>
+  </div>
+  <pre id="detail-result">(belum ada order dipilih)</pre>
+
+  <h3 style="font-size:.85rem; margin-top:1rem;">✅ Aksi pada order di atas</h3>
+  <div class="flex-btns">
+    <button class="go" id="confirm-btn">Konfirmasi Ketersediaan</button>
+    <select id="status-select" style="width:auto"><option value="on_progress">on_progress</option><option value="completed">completed</option></select>
+    <button class="info" id="status-btn">Set Status</button>
+    <select id="cancel-select" style="width:auto">
+      <option value="none">none</option><option value="refund_full">refund_full</option>
+      <option value="forfeit">forfeit</option><option value="partial">partial</option>
+    </select>
+    <button class="danger" id="cancel-btn">🚫 Batalkan Order</button>
+  </div>
+
+  <h3 style="font-size:.85rem; margin-top:1rem;">💰 Catat Pembayaran</h3>
+  <div class="row">
+    <div><label>Jenis</label><select id="pay-kind"><option value="dp">dp</option><option value="pelunasan">pelunasan</option><option value="refund">refund</option></select></div>
+    <div><label>Jumlah (Rp)</label><input id="pay-amount" type="number" min="1" /></div>
+    <div><label>Tanggal Bayar</label><input id="pay-date" type="date" value="2026-08-10" /></div>
+    <div><label>Catatan</label><input id="pay-note" placeholder="opsional" /></div>
+    <div style="display:flex; align-items:flex-end;"><button class="go" id="pay-btn">Catat Pembayaran</button></div>
+  </div>
+
+  <h3 style="font-size:.85rem; margin-top:1rem;">⚡ Buat Denda (-D, satu per order)</h3>
+  <p class="hint" id="penalty-empty-hint">Klik <b>"Muat Detail"</b> di atas dulu supaya pilihan Barang di bawah sesuai isi order ini — bundle otomatis dipecah per komponen (tidak bisa didenda sebagai satu bundle utuh).</p>
+  <table>
+    <thead><tr><th style="width:26%">Barang</th><th>Kode Barang</th><th>Kategori</th><th>Alasan</th><th>Qty</th><th>Denda/Qty</th><th></th></tr></thead>
+    <tbody id="penalty-body"></tbody>
+  </table>
+  <div class="flex-btns">
+    <button id="add-penalty-row-btn">+ Baris Denda</button>
+    <button class="warn" id="create-penalty-btn">Buat Denda</button>
+  </div>
+  <pre id="action-result">(hasil aksi terakhir muncul di sini)</pre>
+</section>
+
+<script>
+'use strict';
+
+const state = { token: null, cart: [] };
+
+const $ = (id) => document.getElementById(id);
+const base = () => $('base').value.replace(/\/+$/, '');
+
+async function api(method, path, body) {
+  const headers = {};
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
+  const res = await fetch(base() + path, {
+    method, headers, body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  let parsed = null;
+  try { parsed = await res.json(); } catch { /* non-JSON */ }
+  return { status: res.status, body: parsed };
+}
+
+function show(el, status, body) {
+  el.textContent = `HTTP ${status}\n` + JSON.stringify(body, null, 2);
+  el.className = status >= 200 && status < 300 ? 'ok' : 'err';
+}
+
+// ── 0. Health ──
+$('health-btn').addEventListener('click', async () => {
+  try {
+    const { status, body } = await api('GET', '/health');
+    show($('health-result'), status, body);
+  } catch (e) {
+    $('health-result').textContent = 'Tidak bisa terhubung: ' + e.message;
+    $('health-result').className = 'err';
+  }
+});
+
+// ── 1. Katalog ──
+$('catalog-load-btn').addEventListener('click', async () => {
+  const type = $('catalog-type').value;
+  const tbody = $('catalog-body');
+  tbody.innerHTML = '<tr><td colspan="6">memuat…</td></tr>';
+  try {
+    const [products, bundles] = await Promise.all([
+      api('GET', `/products?limit=50${type ? '&type=' + type : ''}`),
+      api('GET', '/bundles?limit=50'),
+    ]);
+    const rows = [];
+    for (const p of products.body?.data ?? []) {
+      rows.push({ catalog_type: 'product', code: p.code, name: p.name, type: p.type, price: p.base_price });
+    }
+    for (const b of bundles.body?.data ?? []) {
+      rows.push({ catalog_type: 'bundle', code: b.code, name: b.name, type: 'bundle', price: b.bundle_price });
+    }
+    tbody.innerHTML = rows.length ? '' : '<tr><td colspan="6">kosong</td></tr>';
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.code}</td><td>${r.name}</td><td>${r.type}</td><td>Rp${r.price.toLocaleString('id-ID')}</td>
+        <td><input class="qty-input" type="number" min="1" value="1" id="qty-${r.code}" /></td>
+        <td><button data-code="${r.code}" data-catalog="${r.catalog_type}" data-name="${r.name.replace(/"/g, '&quot;')}" class="add-btn go">+ Keranjang</button></td>`;
+      tbody.appendChild(tr);
+    }
+    tbody.querySelectorAll('.add-btn').forEach((btn) => btn.addEventListener('click', () => {
+      const qty = Number($(`qty-${btn.dataset.code}`).value) || 1;
+      state.cart.push({
+        catalog_type: btn.dataset.catalog, code: btn.dataset.code, name: btn.dataset.name, qty,
+        start_date: $('cart-start').value, end_date: $('cart-end').value, delivery_slot: '',
+      });
+      renderCart();
+    }));
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6">gagal memuat: ${e.message}</td></tr>`;
+  }
+});
+
+// ── 2. Keranjang ──
+function renderCart() {
+  const tbody = $('cart-body');
+  if (!state.cart.length) { tbody.innerHTML = '<tr><td colspan="8" class="hint">(kosong)</td></tr>'; return; }
+  tbody.innerHTML = '';
+  state.cart.forEach((item, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.catalog_type}</td><td>${item.code}</td><td>${item.name}</td><td>${item.qty}</td>
+      <td>${item.start_date}</td><td>${item.end_date}</td>
+      <td><select data-i="${i}" class="slot-select" style="width:auto">
+        <option value="">-</option><option value="pagi">pagi</option><option value="siang">siang</option><option value="sore">sore</option>
+      </select></td>
+      <td><button data-i="${i}" class="rm-btn">hapus</button></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('.rm-btn').forEach((btn) => btn.addEventListener('click', () => {
+    state.cart.splice(Number(btn.dataset.i), 1); renderCart();
+  }));
+  tbody.querySelectorAll('.slot-select').forEach((sel) => sel.addEventListener('change', () => {
+    state.cart[Number(sel.dataset.i)].delivery_slot = sel.value || null;
+  }));
+}
+
+function bookingBody() {
+  const allDiscount = $('cust-alldiscount').checked;
+  return {
+    customer: { name: $('cust-name').value, phone: $('cust-phone').value },
+    alamat_shooting: $('cust-alamat').value,
+    purpose: $('cust-purpose').value,
+    ...( $('cust-promo').value ? { promo_code: $('cust-promo').value } : {} ),
+    is_dp: $('cust-isdp').checked,
+    deposit_percent: Number($('cust-deposit').value) || 0,
+    items: state.cart.map((c) => ({
+      catalog_type: c.catalog_type, code: c.code, start_date: c.start_date, end_date: c.end_date,
+      qty: c.qty, is_discount: allDiscount, delivery_slot: c.delivery_slot || null,
+    })),
+  };
+}
+
+$('preview-btn').addEventListener('click', async () => {
+  const { status, body } = await api('POST', '/orders/preview', bookingBody());
+  show($('booking-result'), status, body);
+});
+
+$('submit-btn').addEventListener('click', async () => {
+  if (!state.cart.length) { alert('Keranjang masih kosong.'); return; }
+  const { status, body } = await api('POST', '/orders', bookingBody());
+  show($('booking-result'), status, body);
+  if (status === 201 && body?.data?.code) {
+    $('lookup-code').value = body.data.code;
+    $('lookup-phone').value = $('cust-phone').value;
+    $('detail-code').value = body.data.code;
+    state.cart = [];
+    renderCart();
+  }
+});
+
+// ── 3. Lookup guest ──
+$('lookup-btn').addEventListener('click', async () => {
+  const q = `?code=${encodeURIComponent($('lookup-code').value)}&phone=${encodeURIComponent($('lookup-phone').value)}`;
+  const { status, body } = await api('GET', '/orders/lookup' + q);
+  show($('lookup-result'), status, body);
+});
+
+// ── 4. Login admin ──
+$('login-btn').addEventListener('click', async () => {
+  const { status, body } = await api('POST', '/auth/login', { email: $('admin-email').value, password: $('admin-password').value });
+  if (status === 200 && body?.data?.access_token) {
+    state.token = body.data.access_token;
+    $('login-status').textContent = `✅ Login sebagai ${body.data.user.email} (role: ${body.data.user.role})`;
+  } else {
+    state.token = null;
+    $('login-status').textContent = `❌ Login gagal — HTTP ${status}: ${body?.error?.message ?? ''}`;
+  }
+});
+
+// ── 5. Kelola order admin ──
+$('orders-load-btn').addEventListener('click', async () => {
+  const { status, body } = await api('GET', '/orders?limit=20');
+  const tbody = $('orders-body');
+  if (status !== 200) { tbody.innerHTML = `<tr><td colspan="6">HTTP ${status} — login admin dulu?</td></tr>`; return; }
+  const rows = body?.data ?? [];
+  tbody.innerHTML = rows.length ? '' : '<tr><td colspan="6">kosong</td></tr>';
+  for (const o of rows) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${o.code}</td><td>${o.customer_name}</td><td>${o.status_transaksi}</td><td>${o.status_pembayaran}</td>
+      <td>Rp${o.total_with_deposit.toLocaleString('id-ID')}</td><td><button data-code="${o.code}" class="view-btn">Lihat</button></td>`;
+    tbody.appendChild(tr);
+  }
+  tbody.querySelectorAll('.view-btn').forEach((btn) => btn.addEventListener('click', () => {
+    $('detail-code').value = btn.dataset.code; loadDetail();
+  }));
+});
+
+/**
+ * Daftar barang yang BOLEH didenda untuk order ini: item produk langsung;
+ * item bundle DIPECAH per komponen (ambil dari GET /bundles/{kode}) karena
+ * bundle tersimpan sebagai 1 baris order_item (D10) — tidak masuk akal
+ * mendenda "1 bundle" sekaligus kalau cuma satu barang di dalamnya yang rusak.
+ */
+async function buildPenaltyPickOptions(order) {
+  const options = [];
+  for (const item of order?.items ?? []) {
+    if (item.catalog_type === 'product') {
+      options.push({ label: `${item.item_name} (${item.item_code})`, name: item.item_name, code: item.item_code });
+    } else if (item.catalog_type === 'bundle') {
+      try {
+        const { body } = await api('GET', `/bundles/${encodeURIComponent(item.item_code)}`);
+        for (const comp of body?.data?.items ?? []) {
+          options.push({ label: `${item.item_name} → ${comp.sku_name} (${comp.sku_code})`, name: comp.sku_name, code: comp.sku_code });
+        }
+      } catch { /* gagal ambil komponen bundle — lewati, tetap bisa isi manual */ }
+    }
+  }
+  return options;
+}
+
+/** Opsi <option> dari state.penaltyPickOptions — dipakai saat bikin baris baru MAUPUN refresh baris lama. */
+function penaltyOptionsHtml() {
+  return (state.penaltyPickOptions ?? [])
+    .map((o, i) => `<option value="${i}">${o.label}</option>`).join('');
+}
+
+/** Timpa ulang isi SEMUA dropdown ".p-pick" yang sudah ada di tabel — dipanggil tiap kali daftar barang berubah (mis. setelah Muat Detail), supaya baris yang dibuat SEBELUM daftar tersedia (termasuk baris contoh awal) ikut ter-update. */
+function refreshPenaltyPickers() {
+  const optionsHtml = penaltyOptionsHtml();
+  document.querySelectorAll('#penalty-body .p-pick').forEach((sel) => {
+    sel.innerHTML = `<option value="">✏️ Manual (isi sendiri)</option>${optionsHtml}`;
+  });
+  const emptyHint = $('penalty-empty-hint');
+  if (emptyHint) emptyHint.style.display = (state.penaltyPickOptions ?? []).length ? 'none' : '';
+}
+
+async function loadDetail() {
+  const code = $('detail-code').value.trim();
+  if (!code) return;
+  const { status, body } = await api('GET', `/orders/${encodeURIComponent(code)}`);
+  show($('detail-result'), status, body);
+  state.penaltyPickOptions = status === 200 ? await buildPenaltyPickOptions(body.data) : [];
+  refreshPenaltyPickers();
+}
+$('detail-load-btn').addEventListener('click', loadDetail);
+
+function currentCode() {
+  const code = $('detail-code').value.trim();
+  if (!code) alert('Isi/pilih kode order dulu di bagian "Kelola Order" atas.');
+  return code;
+}
+
+$('confirm-btn').addEventListener('click', async () => {
+  const code = currentCode(); if (!code) return;
+  const { status, body } = await api('POST', `/orders/${encodeURIComponent(code)}/confirm`);
+  show($('action-result'), status, body); loadDetail();
+});
+
+$('status-btn').addEventListener('click', async () => {
+  const code = currentCode(); if (!code) return;
+  const { status, body } = await api('POST', `/orders/${encodeURIComponent(code)}/status`, { status: $('status-select').value });
+  show($('action-result'), status, body); loadDetail();
+});
+
+$('cancel-btn').addEventListener('click', async () => {
+  const code = currentCode(); if (!code) return;
+  const { status, body } = await api('POST', `/orders/${encodeURIComponent(code)}/cancel`, { dp_disposition: $('cancel-select').value });
+  show($('action-result'), status, body); loadDetail();
+});
+
+$('pay-btn').addEventListener('click', async () => {
+  const code = currentCode(); if (!code) return;
+  const { status, body } = await api('POST', `/orders/${encodeURIComponent(code)}/payments`, {
+    kind: $('pay-kind').value, amount: Number($('pay-amount').value) || 0,
+    paid_date: $('pay-date').value, note: $('pay-note').value || undefined,
+  });
+  show($('action-result'), status, body); loadDetail();
+});
+
+function addPenaltyRow() {
+  const tr = document.createElement('tr');
+  tr.className = 'penalty-row';
+  tr.innerHTML = `
+    <td>
+      <select class="p-pick">
+        <option value="">✏️ Manual (isi sendiri)</option>
+        ${penaltyOptionsHtml()}
+      </select>
+      <input class="p-name" placeholder="Nama barang" style="margin-top:.25rem" />
+    </td>
+    <td><input class="p-code" placeholder="Kode barang" /></td>
+    <td><select class="p-cat"><option>kerusakan</option><option>kehilangan</option><option>overtime</option><option>lainnya</option></select></td>
+    <td><input class="p-reason" placeholder="mis. Rusak saat pemakaian" /></td>
+    <td><input class="p-qty" type="number" min="1" value="1" style="width:4rem" /></td>
+    <td><input class="p-denda" type="number" min="1" placeholder="mis. 75000" style="width:6rem" /></td>
+    <td><button class="rm-penalty-btn">hapus</button></td>`;
+  tr.querySelector('.rm-penalty-btn').addEventListener('click', () => tr.remove());
+  // Baca state.penaltyPickOptions LANGSUNG saat dipilih (bukan snapshot saat baris dibuat) —
+  // supaya tetap benar walau daftar sudah di-refresh oleh "Muat Detail" order lain.
+  tr.querySelector('.p-pick').addEventListener('change', (e) => {
+    const picked = (state.penaltyPickOptions ?? [])[Number(e.target.value)];
+    if (picked) {
+      tr.querySelector('.p-name').value = picked.name;
+      tr.querySelector('.p-code').value = picked.code;
+    }
+  });
+  $('penalty-body').appendChild(tr);
+}
+$('add-penalty-row-btn').addEventListener('click', addPenaltyRow);
+addPenaltyRow(); // satu baris contoh biar langsung bisa dicoba
+
+$('create-penalty-btn').addEventListener('click', async () => {
+  const code = currentCode(); if (!code) return;
+  const items = [...document.querySelectorAll('#penalty-body tr')].map((tr) => ({
+    product_name: tr.querySelector('.p-name').value,
+    product_code: tr.querySelector('.p-code').value,
+    category: tr.querySelector('.p-cat').value,
+    reason: tr.querySelector('.p-reason').value,
+    qty: Number(tr.querySelector('.p-qty').value) || 1,
+    denda_per_qty: Number(tr.querySelector('.p-denda').value) || 0,
+  }));
+  if (!items.length) { alert('Tambah minimal 1 baris denda.'); return; }
+  const { status, body } = await api('POST', `/orders/${encodeURIComponent(code)}/penalties`, { items });
+  show($('action-result'), status, body); loadDetail();
+});
+
+renderCart();
+</script>
+</body>
+</html>

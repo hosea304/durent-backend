@@ -37,9 +37,9 @@
 - [x] Schema `payments` (ledger: kind dp/pelunasan/refund, amount positif, paid_date, note; + `created_at` teknis) — migrasi `payments` diterapkan.
 - [x] `POST /orders/{code}/payments` (recompute status tiap mutasi; order cancel hanya menerima refund) + `GET /payments` + `GET /billing` (total_tagihan/total_paid/outstanding) + derive status belum_lunas/sebagian/lunas (D6; fungsi murni `payment-status.ts` + 10 unit test paritas). Detail agregat order kini memuat ledger nyata; PATCH order me-recompute status. Verifikasi: 48 unit + 17 e2e hijau; api-tester +2 tes (total 27).
 
-## Tahap 5 — Penalties
-- [ ] Schema `penalties`, `penalty_items`.
-- [ ] `POST /penalties` (kode `-D`, kategori incl. overtime) + GET.
+## Tahap 5 — Penalties ✅ (2026-07-14, D27)
+- [x] Schema `penalties` (1:1 order, kode `{order}-D`), `penalty_items` (+ `line_no` teknis) — migrasi `penalties` diterapkan. `status_transaksi`/`status_pembayaran` TIDAK disimpan ganda — derived dari order induk saat respons.
+- [x] `POST /orders/{code}/penalties` (SATU per order — D14, order cancel ditolak, denda kedua → 409) + `GET /orders/{code}/penalties` (array 0/1) + `GET /penalties/{code}` (detail + billing). Kategori incl. **overtime** (D4). `grand_total = Σ qty×denda_per_qty`, menambah `total_tagihan` → status pembayaran order di-recompute (juga terintegrasi ke billing/payments & detail agregat `GET /orders/{code}`). Verifikasi: 51 unit + 23 e2e hijau; api-tester +3 tes (total 30).
 
 ## Tahap 6 — Invoice & Kesiapan FE
 - [ ] `GET /orders/{code}/invoice` (payload lengkap, tanpa PDF — D8).

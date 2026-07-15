@@ -95,6 +95,14 @@ enum PaymentKind {
   refund
 }
 
+/// Kategori denda — overtime masuk sebagai kategori (D4)
+enum PenaltyCategory {
+  kerusakan
+  kehilangan
+  overtime
+  lainnya
+}
+
 // ─── Aktor ──────────────────────────────────────────────────────────
 
 /// Staff (admin/gudang/owner) — login email+password (BACKEND_ARCHITECTURE §6)
@@ -245,6 +253,7 @@ model Order {
   updated_at     DateTime @updatedAt
   items          OrderItem[]
   payments       Payment[]
+  penalty        Penalty? // maksimal 1 denda per order (D14)
 
   @@index([status_transaksi])
   @@index([invoice_date])
@@ -298,4 +307,39 @@ model Payment {
 
   @@index([order_id])
   @@map("payments")
+}
+
+/// Database Denda (header) → penalties — SATU per order, kode `{order}-D` (D14).
+/// status_transaksi & status_pembayaran TIDAK disimpan — derived dari order
+/// (paritas lookup sheet; hindari duplikasi yang bisa tak sinkron — D27).
+model Penalty {
+  id           String        @id @default(uuid()) @db.Uuid
+  code         String        @unique // = order.code + "-D"
+  order_id     String        @unique @db.Uuid // 1:1 (D14)
+  order        Order         @relation(fields: [order_id], references: [id])
+  invoice_date DateTime      @db.Date // tanggal denda dibuat (WIB)
+  grand_total  Int // Σ denda_total (snapshot)
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  items        PenaltyItem[]
+
+  @@map("penalties")
+}
+
+/// Database Denda (baris) → penalty_items
+model PenaltyItem {
+  id            String          @id @default(uuid()) @db.Uuid
+  penalty_id    String          @db.Uuid
+  penalty       Penalty         @relation(fields: [penalty_id], references: [id], onDelete: Cascade)
+  line_no       Int // urutan baris invoice denda (teknis, D27)
+  product_name  String // input bebas spt sheet (bukan FK)
+  product_code  String
+  category      PenaltyCategory
+  reason        String
+  qty           Int
+  denda_per_qty Int // rupiah
+  denda_total   Int // qty × denda_per_qty
+
+  @@unique([penalty_id, line_no])
+  @@map("penalty_items")
 }

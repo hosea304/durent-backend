@@ -143,8 +143,9 @@ Future (Phase 2): stock_ledger · locations · activity_logs
 > `total_tagihan` = `orders.total_with_deposit` + Σ `penalties.grand_total`. Lunas bila Σ(dp+pelunasan) − Σ refund ≥ total_tagihan.
 
 ### 3.8 `penalties` / `penalty_items`
-**penalties:** id · code(= order+`-D`) · order_id(fk) · invoice_date · grand_total(derived) · status_transaksi · status_pembayaran · timestamps. **1 per order** (D14).
-**penalty_items:** id · penalty_id(fk) · product_name · product_code · **category** enum(kerusakan/kehilangan/overtime/lainnya — D4) · reason · qty · denda_per_qty · denda_total.
+**penalties:** id · code(= order+`-D`) · order_id(fk, unique — **1:1 order**, D14) · invoice_date · grand_total(snapshot Σ item) · timestamps. `status_transaksi`/`status_pembayaran` **TIDAK disimpan** — di-**derive dari order induk** saat respons (D27 ①: keduanya lookup di sheet asli, menyimpan salinan berisiko tak sinkron).
+**penalty_items:** id · penalty_id(fk) · **line_no**(teknis, D27) · product_name · product_code (**input bebas, bukan FK** — D27 ⑤) · **category** enum(kerusakan/kehilangan/overtime/lainnya — D4) · reason · qty · denda_per_qty · denda_total.
+> `grand_total` denda **menambah `total_tagihan` order** (`total_with_deposit + Σ penalties.grand_total`) → memengaruhi `status_pembayaran` (D26/D27 ②).
 
 ### 3.9 Reference
 - **code_segments:** segment_type(brand/universal/category_utama/sub) · code · description · is_active.

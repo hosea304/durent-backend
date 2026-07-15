@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Order, Payment } from '../../generated/prisma/client';
+import { Order, Payment, Prisma } from '../../generated/prisma/client';
 import { buildBilling, Billing } from './payment-status';
 import { CreatePaymentDto } from './dto/payment.dto';
 
@@ -65,7 +65,10 @@ export class PaymentsService {
         where: { order_id: order.id },
         select: { kind: true, amount: true },
       });
-      const computed = buildBilling(this.totalTagihan(order), entries);
+      const computed = buildBilling(
+        await this.totalTagihan(tx, order),
+        entries,
+      );
 
       await tx.order.update({
         where: { id: order.id },
@@ -97,12 +100,21 @@ export class PaymentsService {
       where: { order_id: order.id },
       select: { kind: true, amount: true },
     });
-    return { data: buildBilling(this.totalTagihan(order), entries) };
+    return {
+      data: buildBilling(await this.totalTagihan(this.prisma, order), entries),
+    };
   }
 
-  /** total_tagihan = total_with_deposit (+ Σ penalties.grand_total — Tahap 5). */
-  private totalTagihan(order: Order): number {
-    return order.total_with_deposit;
+  /** total_tagihan = total_with_deposit + Σ denda (BUSINESS_FLOW §6, Tahap 5). */
+  private async totalTagihan(
+    db: PrismaService | Prisma.TransactionClient,
+    order: Order,
+  ): Promise<number> {
+    const penalty = await db.penalty.findUnique({
+      where: { order_id: order.id },
+      select: { grand_total: true },
+    });
+    return order.total_with_deposit + (penalty?.grand_total ?? 0);
   }
 
   private async findOrderOrThrow(code: string): Promise<Order> {

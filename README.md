@@ -2,7 +2,7 @@
 
 Sistem untuk bisnis rental kebutuhan produksi **Film/Event** (DuRent Support), menggantikan sistem berbasis Google Spreadsheet + Apps Script menjadi backend profesional yang scalable & terdokumentasi (frontend menyusul).
 
-**Status:** 🟢 Tahap 0–4 ✅ — scaffold · Master/Catalog (data asli terimport) · Auth JWT+RBAC (D24) · Orders + Pricing Engine (D25) · **Payments: ledger dp/pelunasan/refund + status belum_lunas/sebagian/lunas (D26)** (e2e 17/17 hijau) — berikutnya Tahap 5 (Penalties) di `docs/TASK_BREAKDOWN.md`.
+**Status:** 🟢 Tahap 0–5 ✅ — scaffold · Master/Catalog (data asli terimport) · Auth JWT+RBAC (D24) · Orders + Pricing Engine (D25) · Payments/ledger (D26) · **Penalties: denda `-D` (1/order), kategori incl. overtime, masuk total tagihan (D27)** (e2e 23/23 hijau) — berikutnya Tahap 6 (Invoice & Kesiapan FE) di `docs/TASK_BREAKDOWN.md`.
 
 ## 🗂️ Struktur Repo (D23)
 
@@ -11,7 +11,7 @@ Sistem untuk bisnis rental kebutuhan produksi **Film/Event** (DuRent Support), m
 | [`backend/`](backend/) | API NestJS + Prisma (semua kode server) | logika bisnis, endpoint, database → **di sini** |
 | [`frontend/`](frontend/) | *placeholder* — situs customer & dashboard admin (fase berikutnya) | tampilan/halaman web → **di sini** (nanti) |
 | [`docs/`](docs/) | Dokumentasi = **sumber kebenaran** bersama | aturan/kontrak/keputusan |
-| [`tools/`](tools/) | Alat bantu dev — `api-tester.html` (27 smoke test hijau/merah, termasuk alur booking + pembayaran) | — |
+| [`tools/`](tools/) | Alat bantu dev — `api-tester.html` (30 smoke test hijau/merah, termasuk alur booking + pembayaran + denda) | — |
 
 **Menjalankan & menguji backend** (semua perintah dari folder `backend/`):
 ```
@@ -61,8 +61,8 @@ Semua konteks proyek ada di folder [`docs/`](docs/). **Sebelum melakukan apa pun
 - Semua keputusan detail: [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md).
 
 ## ⏭️ Langkah Berikutnya
-- Review pemilik atas D25 ① (pembulatan Rp1 diskon persen/deposit) & ⑥ (dedup customer per phone) di `docs/DECISION_LOG.md`.
-- Lanjut build [`docs/TASK_BREAKDOWN.md`](docs/TASK_BREAKDOWN.md) → **Tahap 5: Penalties** (denda `-D`: kerusakan/kehilangan/overtime, masuk total tagihan).
+- Review pemilik: D25 ① (pembulatan Rp1 diskon persen/deposit) & ⑥ (dedup customer per phone); D27 ① (`penalties.status_*` tidak disimpan, di-derive dari order — menyimpang dari `DATA_MODEL.md` awal). Lihat `docs/DECISION_LOG.md`.
+- Lanjut build [`docs/TASK_BREAKDOWN.md`](docs/TASK_BREAKDOWN.md) → **Tahap 6: Invoice & Kesiapan FE** (`GET /orders/{code}/invoice`, konsistensi format).
 
 ---
 

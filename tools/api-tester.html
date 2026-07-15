@@ -271,6 +271,33 @@ const TESTS = [
       : (s === 401 ? null : 'tanpa token: harap DITOLAK 401'),
   },
   {
+    nama: 'Admin: buat denda -D (1 per order, D14)', metode: 'POST /orders/{code}/penalties',
+    jalan: (api, base, ctx) => api('POST', `/orders/${ctx.orderCode ?? 'DR-000000-0000'}/penalties`, {
+      items: [{ product_name: 'Handy Talky', product_code: 'DS-RT-CM-HT-0001', category: 'kerusakan', reason: 'Antena patah', qty: 1, denda_per_qty: 75000 }],
+    }, ctx.token),
+    cek: (s, b, ctx) => ctx.token
+      ? (s === 201 && b?.data?.code === `${ctx.orderCode}-D` && b?.data?.grand_total === 75000
+        ? null : 'dengan token: harap 201 + code "{order}-D" + grand_total 75000')
+      : (s === 401 ? null : 'tanpa token: harap DITOLAK 401'),
+  },
+  {
+    nama: 'Denda kedua pada order sama ditolak (D14)', metode: 'POST /orders/{code}/penalties (duplikat)',
+    jalan: (api, base, ctx) => api('POST', `/orders/${ctx.orderCode ?? 'DR-000000-0000'}/penalties`, {
+      items: [{ product_name: 'X', product_code: 'X', category: 'lainnya', reason: 'tes duplikat', qty: 1, denda_per_qty: 1000 }],
+    }, ctx.token),
+    cek: (s, b, ctx) => ctx.token
+      ? (s === 409 && b?.error?.code === 'CONFLICT' ? null : 'dengan token: harap 409 CONFLICT (satu denda per order)')
+      : (s === 401 ? null : 'tanpa token: harap DITOLAK 401'),
+  },
+  {
+    nama: 'Billing kini menghitung denda ke total_tagihan', metode: 'GET /orders/{code}/billing (setelah denda)',
+    jalan: (api, base, ctx) => api('GET', `/orders/${ctx.orderCode ?? 'DR-000000-0000'}/billing`, null, ctx.token),
+    cek: (s, b, ctx) => ctx.token
+      ? (s === 200 && b?.data?.total_tagihan === (ctx.orderTotal ?? 0) + 75000
+        ? null : 'dengan token: harap total_tagihan = orderTotal + 75000 (denda)')
+      : (s === 401 ? null : 'tanpa token: harap DITOLAK 401'),
+  },
+  {
     nama: 'Admin: batalkan order tes (bersih-bersih)', metode: 'POST /orders/{code}/cancel',
     jalan: (api, base, ctx) => api('POST', `/orders/${ctx.orderCode ?? 'DR-000000-0000'}/cancel`, { dp_disposition: 'none' }, ctx.token),
     cek: (s, b, ctx) => ctx.token

@@ -5,8 +5,8 @@
 | Meta | Nilai |
 |---|---|
 | Nama proyek | DuRent Support — Backend Rental Produksi Film/Event |
-| Fase saat ini | **Build berjalan.** Tahap 0–4 ✅ (scaffold · catalog+import master · auth/RBAC · orders+Pricing Engine D25 · **payments/ledger D26**) — berikutnya **Tahap 5: Penalties** per `TASK_BREAKDOWN.md`. |
-| Status coding | 🟢 Booking guest end-to-end + pembayaran (dp→pelunasan→refund, status belum_lunas/sebagian/lunas) jalan; e2e 17/17 hijau. |
+| Fase saat ini | **Build berjalan.** Tahap 0–5 ✅ (scaffold · catalog+import master · auth/RBAC · orders+Pricing Engine D25 · payments/ledger D26 · **penalties D27**) — berikutnya **Tahap 6: Invoice & Kesiapan FE** per `TASK_BREAKDOWN.md`. |
+| Status coding | 🟢 Booking guest end-to-end + pembayaran (dp→pelunasan→refund) + denda `-D` (1/order, masuk total tagihan) jalan; e2e 23/23 hijau. |
 | Terakhir diperbarui | 2026-07-14 |
 | Bahasa | Indonesia (istilah teknis boleh Inggris) |
 

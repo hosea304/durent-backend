@@ -22,6 +22,7 @@ import {
   totalPaid,
 } from '../payments/payment-status';
 import { paymentRow } from '../payments/payments.service';
+import { penaltyRow } from '../penalties/penalties.service';
 import { OrderCodeService } from './order-code.service';
 import {
   durationDays,
@@ -273,18 +274,26 @@ export class OrdersService {
    */
   async detail(code: string): Promise<{ data: unknown }> {
     const order = await this.findByCodeOrThrow(code);
-    const payments = await this.prisma.payment.findMany({
-      where: { order_id: order.id },
-      orderBy: [{ paid_date: 'asc' }, { created_at: 'asc' }],
-    });
-    // total_tagihan = total_with_deposit + Σ denda (Tahap 5)
-    const billing = buildBilling(order.total_with_deposit, payments);
+    const [payments, penalty] = await Promise.all([
+      this.prisma.payment.findMany({
+        where: { order_id: order.id },
+        orderBy: [{ paid_date: 'asc' }, { created_at: 'asc' }],
+      }),
+      this.prisma.penalty.findUnique({
+        where: { order_id: order.id },
+        include: { items: true },
+      }),
+    ]);
+    const billing = buildBilling(
+      order.total_with_deposit + (penalty?.grand_total ?? 0),
+      payments,
+    );
     return {
       data: {
         ...this.toOrderResponse(order),
         billing,
         payments: payments.map((p) => paymentRow(p)),
-        penalties: [],
+        penalties: penalty ? [penaltyRow(penalty, order)] : [],
       },
     };
   }
@@ -325,12 +334,18 @@ export class OrdersService {
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.orderItem.deleteMany({ where: { order_id: order.id } });
       // Total tagihan berubah → status pembayaran diturunkan ulang dari ledger
-      const ledger = await tx.payment.findMany({
-        where: { order_id: order.id },
-        select: { kind: true, amount: true },
-      });
+      const [ledger, penalty] = await Promise.all([
+        tx.payment.findMany({
+          where: { order_id: order.id },
+          select: { kind: true, amount: true },
+        }),
+        tx.penalty.findUnique({
+          where: { order_id: order.id },
+          select: { grand_total: true },
+        }),
+      ]);
       const status_pembayaran = derivePaymentStatus(
-        priced.total_with_deposit,
+        priced.total_with_deposit + (penalty?.grand_total ?? 0),
         totalPaid(ledger),
       );
       return tx.order.update({
