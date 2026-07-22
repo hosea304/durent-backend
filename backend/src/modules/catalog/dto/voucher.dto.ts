@@ -6,12 +6,16 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { VoucherType } from '../../../generated/prisma/client';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
 const VOUCHER_TYPES: VoucherType[] = ['percent', 'nominal'];
+/** Batas atas defensif nominal voucher (percent tetap dicek 1–100 di service). */
+const MAX_RUPIAH = 1_000_000_000;
 
 export class VoucherListQueryDto extends PaginationQueryDto {}
 
@@ -19,6 +23,7 @@ export class VoucherListQueryDto extends PaginationQueryDto {}
 export class CreateVoucherDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(60)
   @Transform(({ value }): unknown =>
     typeof value === 'string' ? value.trim().toUpperCase() : value,
   )
@@ -30,6 +35,7 @@ export class CreateVoucherDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(MAX_RUPIAH)
   value!: number; // percent: 1–100 (dicek service) · nominal: rupiah
 }
 
@@ -43,6 +49,7 @@ export class UpdateVoucherDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(MAX_RUPIAH)
   value?: number;
 
   @IsOptional()

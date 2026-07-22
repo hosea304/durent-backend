@@ -6,10 +6,15 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { PricingBasis, ProductType } from '../../../generated/prisma/client';
+
+/** Batas atas defensif harga master (cegah overflow snapshot pricing). */
+const MAX_RUPIAH = 1_000_000_000;
 
 /** `location` ditolak di MVP — sewa lokasi = Phase 2 (D3). */
 export const MVP_PRODUCT_TYPES: ProductType[] = [
@@ -34,6 +39,7 @@ export class ProductListQueryDto extends PaginationQueryDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(120)
   q?: string;
 }
 
@@ -41,6 +47,7 @@ export class ProductListQueryDto extends PaginationQueryDto {
 export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(150)
   name!: string;
 
   @IsIn(MVP_PRODUCT_TYPES)
@@ -48,15 +55,18 @@ export class CreateProductDto {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(10)
   category_utama_code!: string;
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(10)
   sub_category_code!: string;
 
   @Type(() => Number)
   @IsInt()
   @Min(0)
+  @Max(MAX_RUPIAH)
   base_price!: number; // integer rupiah
 
   @IsIn(PRICING_BASES)
@@ -64,6 +74,7 @@ export class CreateProductDto {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(40)
   unit_label!: string;
 
   @IsOptional()
@@ -81,12 +92,14 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(150)
   name?: string;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
+  @Max(MAX_RUPIAH)
   base_price?: number;
 
   @IsOptional()
@@ -96,6 +109,7 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(40)
   unit_label?: string;
 
   @IsOptional()

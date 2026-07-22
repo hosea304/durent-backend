@@ -1,6 +1,6 @@
 # TASK_BREAKDOWN.md — Rincian Task Build
 
-> Daftar task untuk membangun MVP. **Update `[ ]`→`[x]` setiap task selesai** (DEVELOPMENT_RULES §9). Terakhir diperbarui: 2026-07-15.
+> Daftar task untuk membangun MVP. **Update `[ ]`→`[x]` setiap task selesai** (DEVELOPMENT_RULES §9). Terakhir diperbarui: 2026-07-22.
 >
 > Status: ⬜ belum · 🟡 jalan · ✅ selesai.
 
@@ -46,11 +46,12 @@
 - [x] ~~`GET /dashboard/summary`~~ → **ditunda ke Future** (D19).
 - [x] Konsistensi format diaudit — uang/tanggal/enum/error shape sudah konsisten sejak awal; `meta:{total}` ditambahkan ke `GET .../payments` & `GET .../penalties` (list terikat-order, tanpa page/limit — pola code-segments). Verifikasi: 51 unit + 27 e2e hijau; api-tester +1 tes (31 total).
 
-## Tahap 7 — Cross-cutting
-- [ ] Validasi (API + service) menyeluruh.
-- [ ] Error handling + logging terstruktur.
-- [ ] Audit log mutasi kritis (status, edit, payment, cancel).
-- [ ] Rate-limit endpoint publik; gzip; eager-load anti-N+1.
+## Tahap 7 — Cross-cutting 🟡 (2026-07-22, D29 — audit log ditunda)
+- [x] **Validasi (API + service) menyeluruh** — sweep semua DTO: batas atas defensif (qty ≤ 1jt, rupiah/harga ≤ 1M, items ≤ 100/order) cegah overflow & payload raksasa; `MaxLength` semua free-text (alamat/purpose/kode/nama/unit_label); password login ≤ 200 (cegah DoS hashing).
+- [x] **Error handling + logging terstruktur** — `AllExceptionsFilter` memetakan error Prisma (P2002→409, P2025→404, P2003→409; pesan generik, tak bocor) sebelum fallback 500; pino `genReqId` (hormati/echo `x-request-id`) + log 5xx berprefix `[req:<id>]`. Spec filter 8 tes.
+- [ ] ~~Audit log mutasi kritis~~ → **DITUNDA ke Future** (D29, keputusan pemilik) — `activity_logs` tetap Future (DATA_MODEL §4).
+- [x] **Rate-limit endpoint publik; gzip; eager-load anti-N+1** — gzip via `compression`; rate-limit publik sudah lengkap (D25); anti-N+1 direview (bulk `findMany`+Map, `Promise.all`, `_count`) — sudah baik, tanpa perubahan.
+- Verifikasi: build + lint hijau; unit 59/59 hijau (+8 filter). e2e menunggu DB Supabase aktif (paused).
 
 ## Tahap 8 — Migrasi & Go-Live
 - [ ] Backup sheet; import master; set counter.

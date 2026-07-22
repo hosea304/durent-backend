@@ -1,8 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { AppController } from './app.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -26,6 +28,15 @@ import { IntegrationsModule } from './modules/integrations/integrations.module';
             ? undefined
             : { target: 'pino-pretty', options: { singleLine: true } },
         redact: ['req.headers.authorization'],
+        // Correlation id: hormati x-request-id dari klien/proxy, else UUID baru.
+        // Di-echo ke response header agar ops bisa menautkan log ke satu request.
+        genReqId: (req: IncomingMessage, res: ServerResponse): string => {
+          const existing = req.headers['x-request-id'];
+          const id =
+            (Array.isArray(existing) ? existing[0] : existing) ?? randomUUID();
+          res.setHeader('x-request-id', id);
+          return id;
+        },
       },
     }),
     // Batas global 60 req/menit per IP; endpoint publik (booking, lookup)

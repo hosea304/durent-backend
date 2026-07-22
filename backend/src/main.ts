@@ -1,6 +1,7 @@
 import { HttpStatus, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import compression from 'compression';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -11,6 +12,7 @@ async function bootstrap(): Promise<void> {
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix('api/v1'); // Base URL sesuai API_CONTRACT §1
   app.enableCors(); // origin dibatasi saat deploy (frontend belum ada)
+  app.use(compression()); // gzip response — hemat bandwidth payload list/detail
 
   app.useGlobalPipes(
     new ValidationPipe({

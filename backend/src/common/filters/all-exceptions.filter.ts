@@ -6,7 +6,8 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+import { Prisma } from '../../generated/prisma/client';
 
 /** Bentuk error tunggal seluruh API (API_CONTRACT §1 · BACKEND_ARCHITECTURE §9). */
 export interface ErrorBody {
@@ -28,17 +29,45 @@ const CODE_BY_STATUS: Record<number, string> = {
   [HttpStatus.INTERNAL_SERVER_ERROR]: 'INTERNAL_ERROR',
 };
 
+/**
+ * Error Prisma yang wajar diubah ke HTTP client-error alih-alih 500.
+ * Ref kode: https://www.prisma.io/docs/orm/reference/error-reference
+ */
+const PRISMA_ERROR_MAP: Record<
+  string,
+  { status: number; code: string; message: string }
+> = {
+  P2002: {
+    status: HttpStatus.CONFLICT,
+    code: 'CONFLICT',
+    message: 'Data sudah ada atau melanggar batasan keunikan',
+  },
+  P2025: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'NOT_FOUND',
+    message: 'Data tidak ditemukan',
+  },
+  P2003: {
+    status: HttpStatus.CONFLICT,
+    code: 'CONFLICT',
+    message: 'Melanggar keterkaitan data (foreign key)',
+  },
+};
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost): void {
-    const response = host.switchToHttp().getResponse<Response>();
+    const http = host.switchToHttp();
+    const response = http.getResponse<Response>();
+    const request = http.getRequest<Request & { id?: string | number }>();
     const { status, body } = this.buildError(exception);
 
     if (status >= 500) {
+      // req.id (dari pino-http genReqId) menghubungkan log error ini ke log request
       this.logger.error(
-        body.error.message,
+        `[req:${request.id ?? '-'}] ${request.method} ${request.url} → ${body.error.message}`,
         exception instanceof Error ? exception.stack : String(exception),
       );
     }
@@ -47,6 +76,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   private buildError(exception: unknown): { status: number; body: ErrorBody } {
+    // Error Prisma yang dikenal → HTTP wajar (bukan 500 telanjang). Pesan generik,
+    // detail internal (kolom/constraint) tidak dibocorkan ke client.
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      const mapped = PRISMA_ERROR_MAP[exception.code];
+      if (mapped) {
+        return {
+          status: mapped.status,
+          body: {
+            error: { code: mapped.code, message: mapped.message, details: [] },
+          },
+        };
+      }
+      // Kode Prisma lain (tak terduga) → jatuh ke 500 di bawah (ter-log dengan stack).
+    }
+
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const res = exception.getResponse();

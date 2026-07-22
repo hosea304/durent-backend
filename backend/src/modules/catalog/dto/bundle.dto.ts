@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsBoolean,
@@ -8,11 +9,18 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
 import { ProductType } from '../../../generated/prisma/client';
 import { MVP_PRODUCT_TYPES } from './product.dto';
+
+/** Batas atas defensif — cegah overflow snapshot & payload raksasa. */
+const MAX_RUPIAH = 1_000_000_000;
+const MAX_QTY = 1_000_000;
+const MAX_ITEMS = 100;
 
 /**
  * Komponen bundling. Dua cara mengisi:
@@ -24,27 +32,32 @@ export class BundleItemInputDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(60)
   product_code?: string;
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(150)
   sku_name?: string;
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(60)
   sku_code?: string;
 
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(MAX_QTY)
   qty!: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
+  @Max(MAX_RUPIAH)
   component_price?: number; // harga SATUAN komponen (rupiah)
 }
 
@@ -52,6 +65,7 @@ export class BundleItemInputDto {
 export class CreateBundleDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(150)
   name!: string;
 
   @IsIn(MVP_PRODUCT_TYPES)
@@ -59,15 +73,18 @@ export class CreateBundleDto {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(10)
   category_utama_code!: string;
 
   @Type(() => Number)
   @IsInt()
   @Min(0)
+  @Max(MAX_RUPIAH)
   bundle_price!: number; // harga khusus manual
 
   @IsArray()
   @ArrayMinSize(1)
+  @ArrayMaxSize(MAX_ITEMS)
   @ValidateNested({ each: true })
   @Type(() => BundleItemInputDto)
   items!: BundleItemInputDto[];
@@ -78,12 +95,14 @@ export class UpdateBundleDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(150)
   name?: string;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
+  @Max(MAX_RUPIAH)
   bundle_price?: number;
 
   @IsOptional()
@@ -93,6 +112,7 @@ export class UpdateBundleDto {
   @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
+  @ArrayMaxSize(MAX_ITEMS)
   @ValidateNested({ each: true })
   @Type(() => BundleItemInputDto)
   items?: BundleItemInputDto[];

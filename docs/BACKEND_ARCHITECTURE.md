@@ -161,7 +161,7 @@ Bentuk error **konsisten** untuk frontend: `{ code, message, details[] }`.
 Catat **mutasi kritis**: perubahan status order, edit order (seperti UpdatePesanan), input/refund pembayaran, disposisi DP, pembatalan, perubahan harga produk.
 - **Kenapa:** pemilik butuh tahu "siapa ubah apa" (admin override & koreksi salah input adalah bagian nyata dari flow).
 - **Risiko bila tidak:** sengketa data tak bisa dilacak.
-- **MVP (versi ringkas untuk mutasi kritis)** · log penuh = Future.
+- ~~MVP (versi ringkas)~~ → **DITUNDA ke Future (D29, 2026-07-22)** — tabel `activity_logs` tidak dibangun di Tahap 7; selaras DATA_MODEL §4 (Entity Future). Log penuh tetap Future.
 
 ---
 
