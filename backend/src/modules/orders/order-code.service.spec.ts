@@ -27,17 +27,17 @@ describe('wibToday — tanggal DDMMYY zona WIB (UTC+7)', () => {
   });
 });
 
-describe('composeOrderCode — format DR-DDMMYY-NNNN (D7)', () => {
-  it('pad 4 digit: DR-030726-0007', () => {
-    expect(composeOrderCode('030726', 7)).toBe('DR-030726-0007');
+describe('composeOrderCode — format DR-DDMMYY-NNNN-W (D7/D30 website)', () => {
+  it('pad 4 digit + suffix -W: DR-030726-0007-W', () => {
+    expect(composeOrderCode('030726', 7)).toBe('DR-030726-0007-W');
   });
 
-  it('nomor > 9999 tidak terpotong', () => {
-    expect(composeOrderCode('030726', 12345)).toBe('DR-030726-12345');
+  it('nomor > 9999 tidak terpotong: DR-030726-12345-W', () => {
+    expect(composeOrderCode('030726', 12345)).toBe('DR-030726-12345-W');
   });
 });
 
-describe('OrderCodeService — counter GLOBAL MAX+1 (tidak reset)', () => {
+describe('OrderCodeService — counter GLOBAL MAX+1 (tidak reset) + suffix -W', () => {
   const aggregate = jest.fn();
   let service: OrderCodeService;
 
@@ -55,10 +55,10 @@ describe('OrderCodeService — counter GLOBAL MAX+1 (tidak reset)', () => {
     aggregate.mockReset();
   });
 
-  it('DB kosong → mulai dari 0001', async () => {
+  it('DB kosong → order website pertama 0001 (independen dari sheet, D30)', async () => {
     aggregate.mockResolvedValue({ _max: { code_number: null } });
     const next = await service.nextOrderCode(new Date('2026-07-14T03:00:00Z'));
-    expect(next.code).toBe('DR-140726-0001');
+    expect(next.code).toBe('DR-140726-0001-W');
     expect(next.code_number).toBe(1);
     expect(next.invoice_date).toBe('2026-07-14');
   });
@@ -66,7 +66,7 @@ describe('OrderCodeService — counter GLOBAL MAX+1 (tidak reset)', () => {
   it('lanjut MAX+1 walau tanggal berbeda (counter global, D7)', async () => {
     aggregate.mockResolvedValue({ _max: { code_number: 41 } });
     const next = await service.nextOrderCode(new Date('2026-07-14T03:00:00Z'));
-    expect(next.code).toBe('DR-140726-0042');
+    expect(next.code).toBe('DR-140726-0042-W');
     expect(next.code_number).toBe(42);
   });
 });

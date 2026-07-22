@@ -68,7 +68,7 @@ Satu tempat untuk **semua matematika uang**: `duration=(end-start)+1`, `amount=q
 - **MVP. Prioritas tinggi.**
 
 ### 4b. Code Generator (service khusus)
-Membuat `orders.code` = `DR-DDMMYY-NNNN` via **sequence/counter** (bukan scan kolom), dan `penalties.code` = `order-D`. Menjamin **unik & tak reuse** (D12).
+Membuat `orders.code` = `DR-DDMMYY-NNNN-W` (suffix `-W` = order website, D30) via **sequence/counter** (bukan scan kolom), dan `penalties.code` = `order-D` (→ `…-W-D`). Menjamin **unik & tak reuse** (D12); ruang nomor website terpisah dari sheet → mulai 0001 (D30).
 - **Risiko bila tidak:** tabrakan nomor (masalah yang persis dihindari komentar di AppScript existing).
 - **MVP.**
 

@@ -13,7 +13,7 @@ import {
 } from '../payments/payment-status';
 import { CreatePenaltyDto, PenaltyItemInputDto } from './dto/penalty.dto';
 
-/** Akhiran kode denda: `DR-DDMMYY-NNNN` + `-D` (BUSINESS_FLOW §7). */
+/** Akhiran kode denda: kode order + `-D` (BUSINESS_FLOW §7) → order website `DR-DDMMYY-NNNN-W` jadi `…-W-D` (D30). */
 export const PENALTY_CODE_SUFFIX = '-D';
 
 export function composePenaltyCode(orderCode: string): string {

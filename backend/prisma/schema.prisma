@@ -226,7 +226,7 @@ model Voucher {
 /// Database Penyewaan (header) → orders — DATA_MODEL §3.5
 model Order {
   id             String   @id @default(uuid()) @db.Uuid
-  code           String   @unique // DR-DDMMYY-NNNN, counter global (D7)
+  code           String   @unique // DR-DDMMYY-NNNN-W (suffix -W = order website, D30); counter global (D7)
   code_number    Int      @unique // NNNN global — MAX+1 tanpa parsing string (pola D22 ③)
   invoice_date   DateTime @db.Date // tanggal dibuat; TETAP saat update (BUSINESS_FLOW §5)
   customer_id    String   @db.Uuid

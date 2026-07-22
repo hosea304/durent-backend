@@ -243,7 +243,7 @@ describe('Backend DuRent (e2e)', () => {
           };
         }
       ).data;
-      expect(data.code).toMatch(/^DR-\d{6}-\d{4,}$/);
+      expect(data.code).toMatch(/^DR-\d{6}-\d{4,}-W$/); // penanda website (D30)
       expect(data.status_transaksi).toBe('pending');
       expect(data.status_pembayaran).toBe('belum_lunas'); // D6
       expect(data.confirmed_at).toBeNull(); // D1: belum dikonfirmasi

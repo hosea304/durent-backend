@@ -8,3 +8,6 @@ Thumbs.db
 .DS_Store
 .vscode/
 .idea/
+
+# Data uji paritas nyata dari sheet (lokal — jangan commit; template .example ikut)
+backend/prisma/parity-samples.json

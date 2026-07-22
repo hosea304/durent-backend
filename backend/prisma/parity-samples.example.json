@@ -1,0 +1,59 @@
+{
+  "_readme": [
+    "TEMPLATE uji paritas (MIGRATION_PLAN §6.1). Salin file ini jadi",
+    "prisma/parity-samples.json lalu GANTI isinya dengan order NYATA dari sheet.",
+    "Untuk tiap order: salin input (tanggal/qty/harga/diskon/voucher/deposit) dan",
+    "total versi sheet (grand_total, deposit, total+deposit; sub_totals opsional).",
+    "Jalankan: npm run parity  → semua harus PASS sebelum go-live.",
+    "Contoh di bawah sengaja dibuat sudah benar agar demo-nya LULUS."
+  ],
+  "samples": [
+    {
+      "ref": "CONTOH-1 Kursi 20x5000, 2 hari, deposit 30%",
+      "deposit_percent": 30,
+      "voucher": null,
+      "items": [
+        {
+          "start_date": "2025-04-23",
+          "end_date": "2025-04-24",
+          "qty": 20,
+          "unit_price": 5000,
+          "is_discount": false
+        }
+      ],
+      "expected": {
+        "grand_total": 200000,
+        "deposit_amount": 60000,
+        "total_with_deposit": 260000,
+        "sub_totals": [200000]
+      }
+    },
+    {
+      "ref": "CONTOH-2 Tenda diskon 10% + Meja, tanpa deposit",
+      "deposit_percent": 0,
+      "voucher": { "type": "percent", "value": 10 },
+      "items": [
+        {
+          "start_date": "2025-04-23",
+          "end_date": "2025-04-25",
+          "qty": 5,
+          "unit_price": 100000,
+          "is_discount": true
+        },
+        {
+          "start_date": "2025-04-23",
+          "end_date": "2025-04-23",
+          "qty": 10,
+          "unit_price": 20000,
+          "is_discount": false
+        }
+      ],
+      "expected": {
+        "grand_total": 1550000,
+        "deposit_amount": 0,
+        "total_with_deposit": 1550000,
+        "sub_totals": [1350000, 200000]
+      }
+    }
+  ]
+}

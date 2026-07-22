@@ -53,10 +53,14 @@
 - [x] **Rate-limit endpoint publik; gzip; eager-load anti-N+1** — gzip via `compression`; rate-limit publik sudah lengkap (D25); anti-N+1 direview (bulk `findMany`+Map, `Promise.all`, `_count`) — sudah baik, tanpa perubahan.
 - Verifikasi: build + lint hijau; unit 59/59 hijau (+8 filter). e2e menunggu DB Supabase aktif (paused).
 
-## Tahap 8 — Migrasi & Go-Live
-- [ ] Backup sheet; import master; set counter.
-- [ ] **Uji paritas** Pricing Engine vs sheet (gate).
-- [ ] Soft launch paralel → cutover (MIGRATION Tahap 4–5).
+## Tahap 8 — Migrasi & Go-Live 🟡 (2026-07-22, D30 — model dual-channel `-W`)
+- [x] **Import master** — sudah di Tahap 1 (100 produk, 8 bundle, 36 voucher).
+- [x] ~~Set counter dari MAX sheet~~ → **TIDAK PERLU** (D30): order website ber-suffix `-W` → ruang nomor terpisah, mulai 0001 sendiri. Generator kode + e2e diupdate ke `-W`.
+- [x] **Harness uji paritas** Pricing Engine vs sheet (gate MG2) — `prisma/parity-check.ts` + `npm run parity` + template `parity-samples.example.json` (FAIL → exit 1). *Menjalankan gate butuh data order NYATA dari pemilik.*
+- [ ] **Backup + snapshot spreadsheet** (Stage 0) — **pemilik**.
+- [ ] **Isi `parity-samples.json`** (order historis nyata) → jalankan `npm run parity` sampai LULUS — **pemilik** (data) + gate.
+- [ ] **Count/spot check** katalog backend vs sheet — butuh DB Supabase aktif (saat ini paused).
+- [ ] **Soft launch** website paralel dengan spreadsheet (bukan cutover — D30) — **pemilik** (deploy).
 
 ---
 *(Phase 2/Future → lihat `FUTURE_ROADMAP.md`.)*

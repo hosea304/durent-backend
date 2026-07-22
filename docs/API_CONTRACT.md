@@ -108,9 +108,9 @@ Peran: 🟢 publik/guest · 🔵 admin · 🟠 gudang · 🟣 owner.
 ```
 **Server melakukan:** ambil harga dari katalog (**snapshot**), hitung durasi/amount/rental_total/diskon/sub_total/grand_total/deposit (**Pricing Engine**), generate `code` (**Code Generator**), set `status_transaksi=pending`, `status_pembayaran=belum_lunas`, `confirmed_at=null`.
 ```jsonc
-// Response 201 — order lengkap (siap-invoice)
+// Response 201 — order lengkap (siap-invoice). Kode ber-suffix -W = order website (D30).
 { "data": {
-  "code": "DR-030726-0007", "invoice_date": "2026-07-03",
+  "code": "DR-030726-0007-W", "invoice_date": "2026-07-03",
   "customer": {...}, "alamat_shooting": "...", "purpose": "...",
   "items": [ { "item_name":"Kursi","item_code":"…","start_date":"…","end_date":"…",
                "duration":2,"qty":20,"unit_price":5000,"amount":100000,
@@ -119,7 +119,7 @@ Peran: 🟢 publik/guest · 🔵 admin · 🟠 gudang · 🟣 owner.
   "grand_total": 900000, "deposit_percent": 50, "deposit_amount": 450000,
   "total_with_deposit": 1350000, "is_dp": true,
   "status_transaksi": "pending", "status_pembayaran": "belum_lunas",
-  "whatsapp_admin_url": "https://wa.me/…?text=Order%20DR-030726-0007"
+  "whatsapp_admin_url": "https://wa.me/…?text=Order%20DR-030726-0007-W"
 } }
 ```
 **Validasi:** `end_date ≥ start_date`; `qty > 0`; catering `qty ≥ min_qty`; produk `is_active` & ada kode (D12); voucher valid; `catalog_type` cocok id/code. **Risiko validasi:** tanggal terbalik, qty nol, produk nonaktif, kode voucher salah.

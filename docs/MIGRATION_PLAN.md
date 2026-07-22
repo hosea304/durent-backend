@@ -6,7 +6,9 @@
 
 ---
 
-## 0. Keputusan Kunci: Model Cutover (perlu konfirmasi → D18)
+> **AMANDEMEN D30 (2026-07-22):** model final = **DUAL-CHANNEL paralel PERMANEN**, bukan cutover. Website (kanal customer) jalan berdampingan dengan spreadsheet (kanal admin manual) untuk seterusnya. Order website ber-suffix **`-W`** (`DR-DDMMYY-NNNN-W`) → ruang nomor terpisah, jadi website menomori sendiri **mulai 0001** dan langkah **"set counter dari MAX sheet" (Tahap 3) TIDAK diperlukan**. Sisanya (Opsi A: master-only, order lama diam di sheet, gate paritas) tetap berlaku. Baca bagian di bawah dengan lensa ini.
+
+## 0. Keputusan Kunci: Model Cutover (perlu konfirmasi → D18 · diamandemen D30)
 
 Karena **MVP = order lahir di backend** (customer self-booking) dan volume historis kecil (7–10/bln), saya rekomendasikan:
 

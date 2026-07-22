@@ -16,7 +16,7 @@
 - Mengubah **flow bisnis** (order/status/invoice/bayar/denda) — baca `BUSINESS_FLOW.md` dulu.
 - Mengubah **entity/field/relasi** di luar `DATA_MODEL.md`.
 - Menambah/mengubah **endpoint** di luar `API_CONTRACT.md`.
-- Mengubah **format kode** order/denda (`DR-DDMMYY-NNNN`, `-D`) atau aturan hitung.
+- Mengubah **format kode** order/denda (website: `DR-DDMMYY-NNNN-W`, `…-W-D` — D30; sheet: `DR-DDMMYY-NNNN`, `-D`) atau aturan hitung.
 - Menghapus data secara permanen (produk = **soft delete**; kode **tak boleh direuse**).
 - Memilih/ganti **tech stack, DB vendor, atau library besar** tanpa dibahas.
 - Membuat entity/tabel/API **berdasarkan asumsi** kebutuhan umum rental.

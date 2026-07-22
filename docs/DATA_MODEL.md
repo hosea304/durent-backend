@@ -90,8 +90,8 @@ Future (Phase 2): stock_ledger · locations · activity_logs
 | Field | Tipe | Catatan |
 |---|---|---|
 | id | uuid | PK |
-| code | string(unique) | `DR-DDMMYY-NNNN`, counter global (D7) |
-| code_number | int(unique) | *(teknis, D25)* NNNN global — MAX+1 tanpa parsing string (pola bundle D22) |
+| code | string(unique) | `DR-DDMMYY-NNNN-W` — suffix `-W` = order dari website (D30); counter global (D7) |
+| code_number | int(unique) | *(teknis, D25)* NNNN global — MAX+1 tanpa parsing string (pola bundle D22); website menomori sendiri mulai 0001 (D30) |
 | invoice_date | date | tanggal dibuat (zona WIB, D25); **tetap saat update** |
 | customer_id | fk customers | + snapshot `customer_name`, `customer_phone` |
 | alamat_shooting | string | per-order |
